@@ -1,6 +1,6 @@
 # Signatures of past climates: genomic history of *Lampropholis delicata*
 
-<img src="assets/aer-grafite.png" width="500" alt="Original Lampropholis illustration by Nadaline">
+<img src="assets/masthead.svg" width="500" alt="Lampropholis study masthead">
 
 **Repository status.** This repository will be updated as the associated publications progress.
 
@@ -109,6 +109,8 @@ Start with the sample IDs and local climate layers, not the cluster colours or t
 Keep sampling geography, nuclear ancestry and the population definitions used for allele-count graphs distinct. The [diversity code](analysis/09_population_diversity/population_genetics.R) gives one example of how to document that distinction. For demographic questions preserve the projection, the SFS mask, the fitted spectra and the model parameterisation; read residuals alongside AIC and require agreement across the relevant summaries. RAD SNPs describe an ascertained subset of the genome; the resulting diversity estimates are not per-base estimates for an entire genome.
 
 The [figure index](docs/figures.md), [methods](docs/methods.md) and [reproduction guide](docs/reproducibility.md) identify inputs and show which steps can be rerun. The [four-population moments checks](docs/moments_4d_status.md) remain separate from the article's pairwise comparisons.
+
+The [supplementary figure gallery](docs/r7_supplementary_figures.md) brings together the seven additional plates included in the R7 thesis.
 
 ## Data availability and citation
 
