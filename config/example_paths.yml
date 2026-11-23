@@ -1,0 +1,8 @@
+# Local copies only. Not read automatically by legacy scripts.
+project_root: data/local/lampropholis
+chelsa_dir: data/local/chelsa
+palaeoclimate_dir: data/local/palaeoclim
+boundaries: data/local/boundaries/abs_states_generalized.geojson
+treemix_plot_helpers: data/local/treemix/plotting_funcs.R
+output: work
+

@@ -1,0 +1,9 @@
+reference_panel: {individuals: 170, snps: 19352}
+landscape_panel: {individuals: 170, snps: 19131, excluded_RDA_candidates: 221}
+snmf: {selected_k: 4, minimum_cross_entropy_k: 9, high_ancestry_q: 0.70}
+svdquartets: {individuals: 170, sites: 14766, quartets: 100000, bootstraps: 1000, rooted: false}
+treemix: {groups: 14, individuals: 163, loci: 15955, m_min: 0, m_max: 8, replicates: 10, displayed_m: 4}
+gdm: {spatial_folds: 5, conditional_permutations: 999}
+demography: {baseline_models: [SI, IM, AM, SC], calibrated_time: false}
+diversity: {groups: 14, individuals: 163, shared_snps: 5827, min_called_diploids: 3, min_call_fraction: 0.70, rarefaction_gene_copies: 6, RAD_bootstrap: 500}
+

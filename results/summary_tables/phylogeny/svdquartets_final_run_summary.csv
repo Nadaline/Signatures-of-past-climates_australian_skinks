@@ -1,0 +1,2 @@
+"tree_tips","frozen_demographic_assignments","assignments_not_in_tree","random_quartets","bootstrap_replicates","note"
+170,155,0,1e+05,1000,"PAUP exported bootstrap support as raw Newick branch values; these values are not evolutionary branch lengths. Monophyly is reported both across all 170 tree tips and after pruning the 15 samples outside the frozen demographic assignments."

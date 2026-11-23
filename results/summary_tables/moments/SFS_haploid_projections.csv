@@ -1,0 +1,5 @@
+"population","diploid_N","maximum_haploid_N","selected_projection","assignment_threshold","rationale","loci_retained","proportion_loci_retained"
+"K1",43,86,80,0.7,"primary Q>=0.70 scheme; retain K2 while preserving locus availability",15433,0.797488631665978
+"K2",11,22,20,0.7,"primary Q>=0.70 scheme; retain K2 while preserving locus availability",11980,0.619057461761058
+"K3",56,112,100,0.7,"primary Q>=0.70 scheme; retain K2 while preserving locus availability",16109,0.832420421661844
+"K4",45,90,80,0.7,"primary Q>=0.70 scheme; retain K2 while preserving locus availability",12833,0.663135593220339

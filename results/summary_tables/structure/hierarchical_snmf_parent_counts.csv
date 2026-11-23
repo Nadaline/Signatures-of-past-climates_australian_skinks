@@ -1,0 +1,9 @@
+"global_component","parent_eligible","n_individuals"
+"K1",FALSE,10
+"K2",FALSE,2
+"K3",FALSE,2
+"K4",FALSE,1
+"K1",TRUE,43
+"K2",TRUE,11
+"K3",TRUE,56
+"K4",TRUE,45

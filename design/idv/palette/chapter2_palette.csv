@@ -1,0 +1,13 @@
+key,hex,use
+ink,#251462,structural text and K2
+violet,#6811DB,K1 and negative values
+lavender,#B19CD2,K3 and midtones
+amber,#EBB201,K4 and positive values
+paper,#FFFFFF,background and neutral zero
+wash,#F7F3FB,light sequential endpoint
+rule,#C1B8CE,rules and muted annotation
+K3a,#44247C,K3 nested
+K3b,#8254B4,K3 nested
+K3c,#C7AFDE,K3 nested
+K4a,#946212,K4 nested
+K4b,#F0C24B,K4 nested

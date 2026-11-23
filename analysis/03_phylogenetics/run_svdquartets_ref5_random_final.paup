@@ -1,0 +1,11 @@
+begin paup;
+  execute lampro_ref5_170.nex;
+  SVDQuartets
+    nthreads=8
+    evalQuartets=random
+    taxpartition=none
+    bootstrap=standard
+    nreps=1000;
+  savetrees file=svdquartets_ref5_170_random_final.tre format=newick replace=yes;
+  quit;
+end;

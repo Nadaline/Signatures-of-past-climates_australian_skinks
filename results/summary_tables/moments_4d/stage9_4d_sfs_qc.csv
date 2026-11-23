@@ -1,0 +1,9 @@
+metric,value
+dimensions,81x21x101x81
+folded,True
+sample_sizes,80;20;100;80
+pop_ids,K1;K2;K3;K4
+sfs_mass,6894.000000000223
+positive_cells,127358
+negative_cells,0
+moments_version,1.6.0
