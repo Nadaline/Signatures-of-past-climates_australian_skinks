@@ -1,6 +1,6 @@
 # Lampropholis visual identity
 
-I kept the violet–amber editorial identity and the final manuscript K colors. The archived palette documents an older cluster assignment; do not use that assignment in the final figure set.
+I kept the violet–amber editorial identity and the final manuscript K colors. The earlier palette records a different cluster assignment and should not be substituted for the mapping used in the current figures.
 
 | Role | HEX | RGB | Approx. CMYK (%) |
 |---|---|---|---|
@@ -15,5 +15,5 @@ I kept the violet–amber editorial identity and the final manuscript K colors. 
 
 Use DejaVu Serif headings and DejaVu Sans body and data for the editorial proof; the original brand fonts were not established. Use 10–11 pt for body, 8 pt minimum for labels, dark type on pale backgrounds, no decorative gradients, and labels in addition to color. Keep at least 5 mm from trim and 7 mm around fold centers; backgrounds extend into the 3 mm bleed. Use subtle map outlines and retain the original scales, symbol meanings and scientific colors.
 
-I use the [original illustration](../../assets/aer-grafite.png) in the private README. It is unchanged from the opening image of the original project. See the [reuse status](../../LICENSE-STATUS.md) before any public release.
+The [opening illustration](../../assets/aer-grafite.png) is the original artwork used for this project. Reuse of the illustration is addressed separately in the [credit and licence notes](../../LICENSE-STATUS.md).
 
