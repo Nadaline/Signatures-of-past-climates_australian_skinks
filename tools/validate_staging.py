@@ -1,4 +1,4 @@
-"""Validate the local staging content; do not run any scientific fits."""
+"""Check published documentation, links and figures. Verify local repository documentation and selected files for internal consistency and missing references. This utility checks the presentation of research materials rather than running statistical models. Warnings should be reviewed against the original methods and outputs; passing a repository check is not a substitute for scientific reproducibility."""
 import csv,hashlib,re,subprocess
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -22,7 +22,7 @@ for f in base.rglob('*'):
     if f.suffix in {'.md','.R','.py','.csv','.tsv','.yml','.sh','.paup','.cff'}:
         content=f.read_text()
         if f.parent==base/'tools':
-            # Known legacy server input is quoted solely as a replacement/screening pattern.
+            # Known earlier server input is quoted solely as a replacement/screening pattern.
             content=content.replace('/'+'projects/rstudio-export/Lampro','')
         assert not re.search(r'/(?:home|media|projects|Users)/[A-Za-z0-9_-]+|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16}|BEGIN [A-Z ]*PRIVATE KEY',content),f
 def table(name):
