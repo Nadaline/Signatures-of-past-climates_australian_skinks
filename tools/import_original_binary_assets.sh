@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Include the original research figures and illustrations
+# Copy previously prepared graphical files from the research repository without replacing the figures already used by this study.
+# This script transfers existing assets only. It does not generate or reanalyse genomic data.
+#
 # Add original binary assets from the private research repository without
 # overwriting the chapter figures already published from the R7 thesis.
 set -euo pipefail
