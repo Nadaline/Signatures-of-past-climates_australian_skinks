@@ -1,4 +1,8 @@
-#### 1. Frozen contemporary fits, folds and conditional nulls ####
+# Figure 4: contemporary landscape effects in generalized dissimilarity models
+# Summarize the fitted geographic, climatic and topographic-resistance effects and the corresponding spatial validation tests. This script draws figures from stored model summaries rather than estimating GDM parameters.
+# Read the I-spline plots together with the spatially withheld prediction errors and conditional permutation results. Predictive improvement and statistical support under a spatial null are distinct quantities.
+#
+#### 1. Contemporary model fits, spatial folds and conditional tests ####
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 2L || (length(args) == 3L && args[3] == "--figure-only"))
 project <- normalizePath(args[1], mustWork = TRUE)
