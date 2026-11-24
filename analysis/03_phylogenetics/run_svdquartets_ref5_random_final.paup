@@ -1,3 +1,9 @@
+[
+* PAUP analysis: SVDQuartets species-tree summary.
+* Infer relationships among sampled nuclear genotypes from randomly evaluated quartets with standard bootstrap resampling. The output is an unrooted relationship estimate, not a dated phylogeny.
+* Verify that the NEXUS matrix uses the intended 170 individuals and 14,766 informative sites, and retain the recorded random-quartet and bootstrap settings.
+]
+
 begin paup;
   execute lampro_ref5_170.nex;
   SVDQuartets
