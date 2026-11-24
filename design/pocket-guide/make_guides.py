@@ -1,4 +1,4 @@
-"""Create the Portuguese and English two-sided proofs as editable vector art."""
+"""Illustrated Lampropholis field guide: print and screen layouts. Produce English and Portuguese pocket-guide layouts from the existing scientific colour palette, artwork and geographic summaries. Keep specimen illustrations, labels and sampling geography consistent with the reviewed project materials; figure design does not change the associated genetic analyses."""
 from collections import Counter
 import csv,html,json,math,re,subprocess,sys,tempfile
 from pathlib import Path
