@@ -1,4 +1,8 @@
-#### 1. Final SVDQuartets tree, sampling and nested ancestry ####
+# Figure 3: nuclear relationships and sampling geography
+# Align the unrooted SVDQuartets tree with the map of sampling localities and independently estimated ancestry coefficients. Rearranging the display of tree branches does not change topology or bootstrap support.
+# Branch support indicates uncertainty in inferred relationships, not divergence times. Interpret map connectors as graphical aids rather than migration paths.
+#
+#### 1. Nuclear SVDQuartets tree, sampling and nested ancestry ####
 library(ape)
 library(sf)
 args <- commandArgs(TRUE)
