@@ -1,4 +1,8 @@
-#### Vector figures from frozen and matched-CV tables ####
+# Figures integrating contemporary and historical landscape evidence
+# Prepare vector graphics that compare geographic structure, spatial validation, historical environmental contributions and nuclear relationships.
+# Plots combine estimates made by different methods; they do not imply that predictor gains, ancestry components and phylogenetic support share a common statistical scale.
+#
+#### Vector figures from fitted-model and matched cross-validation tables ####
 suppressPackageStartupMessages({library(sf);library(ape)})
 a <- commandArgs(TRUE); p <- a[1]; out <- a[2]; local <- a[3]
 t <- file.path(out,"tables")
