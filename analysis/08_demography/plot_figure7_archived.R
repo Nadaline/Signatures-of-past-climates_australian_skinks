@@ -1,4 +1,8 @@
-#### Rebuild candidate A from archived summary values, not model fitting
+# Figure 7: visual comparison of demographic histories
+# Plot model selection summaries and observed-minus-expected site-frequency spectrum residuals for the pairwise contrasts. Retain the original SFS units in the colour scale.
+# This is a figure reconstruction from existing estimates; it does not rerun demographic inference.
+#
+#### Draw demographic comparison from previously estimated model summaries
 args <- commandArgs(TRUE)
 stopifnot(length(args)==1,dir.exists(args[1]))
 pair <- c("K1_K3","K1_K4","K2_K4")
