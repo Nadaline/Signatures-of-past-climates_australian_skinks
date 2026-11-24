@@ -1,3 +1,7 @@
+# Four-population frequency spectrum: diagnostic checks
+# Inspect the folded four-dimensional site-frequency spectrum and its compatibility with a simple reference model. The reference spectrum is not itself a fitted historical scenario.
+# The pairwise marginal displays help diagnose the same underlying data and must not be treated as additional independent observations.
+#
 #### Packages ####
 import os
 import csv
@@ -19,8 +23,8 @@ if tuple(data.shape) != expected_shape:
 if not bool(data.folded):
     raise ValueError("The Stage 9 empirical SFS must be folded.")
 
-#### Build a topology-free four-way split reference ####
-# This spectrum is only a technical reference for the folded-likelihood audit.
+#### Construct a simple four-population reference spectrum ####
+# This spectrum is only a technical reference for the folded-likelihood check.
 # It represents an instantaneous four-way split with no migration and no
 # elapsed integration time. It is not a fitted biological demographic model.
 sample_sizes = list(data.sample_sizes)
@@ -32,7 +36,7 @@ expected = expected.fold()
 expected.pop_ids = data.pop_ids
 expected.mask = data.mask.copy()
 
-#### Check folded likelihood compatibility ####
+#### Check compatibility of the folded likelihood ####
 dimensions_match = tuple(data.shape) == tuple(expected.shape)
 pop_ids_match = list(data.pop_ids) == list(expected.pop_ids)
 model_folded = bool(expected.folded)
