@@ -1,4 +1,8 @@
 #!/usr/bin/env Rscript
+# Nested sNMF analyses within broad genetic clusters
+# Estimate fine-scale structure separately within selected components of the global K = 4 solution. Comparing nested solutions helps describe regional variation that is not visible at the range-wide scale.
+# Keep individual order identical between the genotype matrix and ancestry table. Evaluate cross-entropy, replicate agreement and component sizes together when interpreting a nested K.
+#
 
 #### Packages ####
 
