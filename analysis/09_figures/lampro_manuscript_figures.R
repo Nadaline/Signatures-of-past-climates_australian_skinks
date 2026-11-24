@@ -1,4 +1,8 @@
 #!/usr/bin/env Rscript
+# Main and supplementary figures for the Lampropholis study
+# Assemble geographic, nuclear-structure, landscape, TreeMix and demographic panels from the relevant analysis outputs. Keep the scientific meanings of scales, group labels and model summaries consistent across figures.
+# Use saved results for figure construction and refer to the analysis scripts for the fitting procedures. Genetic clusters, geographic groups and mitochondrial clades are different classifications.
+#
 
 #### Packages ####
 
@@ -45,10 +49,10 @@ as_plot_image <- function(path) {
 }
 australia <- map_data("world", region = c("Australia", "Tasmania"))
 
-#### Load frozen results ####
+#### Read previously estimated genetic and landscape results ####
 
 pca <- read.csv(file.path(project, "population_structure", "pcoa_scores.csv"), stringsAsFactors = FALSE)
-# The archived object was generated with dartR::gl.pcoa. Its eigenvalues, rather
+# The previously saved object was generated with dartR::gl.pcoa. Its eigenvalues, rather
 # than the plotted coordinates, define the reported PCoA variation percentages.
 pcoa_archived <- readRDS(file.path(project, "..", "Reference", "pcoa.ref7.rds"))
 pcoa_positive_eigenvalues <- pcoa_archived$eig[pcoa_archived$eig > 0]
@@ -324,7 +328,7 @@ reticulate_plot <- p4a + theme(legend.position = "none", axis.text = element_tex
 graphical_abstract <- (past_map | global_map | nested_plot | reticulate_plot) + plot_annotation(title = "Historical landscape signal and hierarchical genomic structure in Lampropholis delicata")
 save_figure(graphical_abstract, "Graphical_Abstract", 16, 4.5)
 
-#### Save figure manifest and audit ####
+#### Record figure outputs and input checks ####
 
 manifest <- data.frame(
   figure = c("Figure 1", "Figure 2", "Figure 3", "Figure 4", "Figure 5", "Supplementary Figure S1", "Supplementary Figure S1b", "Supplementary Figure S1c", "Supplementary Figure S2", "Supplementary Figure S3", "Supplementary Figure S4", "Supplementary Figure S5", "Graphical abstract"),
