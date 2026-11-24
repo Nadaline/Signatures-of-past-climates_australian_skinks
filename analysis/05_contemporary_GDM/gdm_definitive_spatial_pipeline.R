@@ -1,4 +1,8 @@
 #!/usr/bin/env Rscript
+# Contemporary generalized dissimilarity models with spatial validation
+# Fit and compare models based on geographic distance, present-day climate and effective topographic resistance. Cross-validation withholds entire sampling localities so related pairwise observations do not leak into training data.
+# Climate predictors are selected using training localities. Conditional tests randomize the relevant training information within spatial blocks while keeping held-out observations unchanged.
+#
 
 # I fit the contemporary landscape GDM from first principles. Geography and
 # direct Circuitscape effective topographic resistance is fixed; current CHELSA variables
@@ -18,7 +22,7 @@ seed <- if (length(args) >= 2) as.integer(args[2]) else 20260811L
 #### Analysis settings ####
 
 # I keep a small test setting for preparation and a separate value for the
-# future final inference.  The final setting is deliberately not run here.
+# future full analysis.  The final setting is deliberately not run here.
 n_perm_test <- if (length(args) >= 3) as.integer(args[3]) else 19L
 n_perm_final <- if (length(args) >= 5) as.integer(args[5]) else 999L
 nfold <- if (length(args) >= 4) as.integer(args[4]) else 5L
