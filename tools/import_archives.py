@@ -1,4 +1,4 @@
-"""Restore selected archived products; do not fit models or copy any sample table."""
+"""Copy selected analysis outputs into a shareable repository. Collect existing summary tables, figures and supporting inputs from specified research folders while retaining their source provenance. No statistical models are fitted by this utility. Preserve original scientific files and sample confidentiality; consult the data documentation before distributing individual-level data."""
 from pathlib import Path
 import hashlib, csv, shutil, sys, re
 root=Path(sys.argv[1]).resolve()
