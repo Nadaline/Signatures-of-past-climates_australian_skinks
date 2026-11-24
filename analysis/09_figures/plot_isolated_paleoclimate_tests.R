@@ -1,6 +1,10 @@
+# Separate effects of Last Interglacial and Last Glacial Maximum conditions
+# Plot the historical climate comparisons by period and visualize their performance under spatial validation. The period-specific summaries complement the main combined historical analysis.
+# Check the comparison baseline and the relevant conditional permutation result before interpreting an apparent improvement.
+#
 #### Packages ####
 
-# ggplot2 produces the compact manuscript figure from the frozen Stage 6B outputs.
+# ggplot2 produces the compact manuscript figure from the previously estimated Stage 6B outputs.
 require(ggplot2)
 # dplyr keeps the period-specific summaries transparent and readable.
 require(dplyr)
