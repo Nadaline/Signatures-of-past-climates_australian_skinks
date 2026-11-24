@@ -1,6 +1,6 @@
 # Signatures of past climates: genomic history of *Lampropholis delicata*
 
-<img src="assets/masthead.svg" width="500" alt="Lampropholis study masthead">
+<img src="assets/aer-grafite.png" width="760" alt="Original Lampropholis illustration by Júnior Nadaline">
 
 **Repository status.** This repository will be updated as the associated publications progress.
 
