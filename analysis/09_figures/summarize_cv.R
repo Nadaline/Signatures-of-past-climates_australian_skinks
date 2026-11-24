@@ -1,3 +1,7 @@
+# Cross-validation: compare predictions for identical held-out pairs
+# Combine replicate predictions with the reference spatial validation table and calculate comparable error summaries. Matched pairs are required because changing which locality pairs are evaluated can obscure the effect of a predictor.
+# Keep locality identities and pair identifiers unchanged when joining tables; only successful replicate predictions contribute to the summary.
+#
 #### Pair-matched metrics from successful independent locality assignments ####
 args <- commandArgs(TRUE); out <- args[1]
 dir <- file.path(out,"tables")
