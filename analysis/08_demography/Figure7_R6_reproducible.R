@@ -1,4 +1,8 @@
-#### Read frozen inputs; no fit is performed
+# Figure 7: demographic-model comparison and frequency-spectrum residuals
+# Reconstruct the comparison of strict isolation, continuous migration, ancient migration and secondary contact from previously estimated folded site-frequency spectra and model fits.
+# The fitted spectra and AIC rankings are inputs to plotting; this script does not optimize demographic parameters. Residual plots locate model mismatches rather than testing each frequency bin.
+#
+#### Read fitted spectra and model summaries without refitting
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 3)
 package <- args[1]; project <- args[2]; out <- args[3]
