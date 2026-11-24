@@ -1,4 +1,8 @@
-#### 1. Read saved data only: archive coordinates, global Q and nested Q ####
+# Figure 2: genetic structure across the sampled range
+# Combine observed sampling locations with principal coordinate analysis (PCoA) and sNMF ancestry coefficients. These complementary summaries illustrate genetic variation without treating ancestry components as named populations or species.
+# The plots use previously estimated ordination and sNMF results. Check that sample identifiers agree across coordinate, PCoA and ancestry tables before drawing the panels.
+#
+#### 1. Read sampling coordinates and global and nested ancestry estimates ####
 library(sf)
 library(terra)
 args <- commandArgs(TRUE)
@@ -76,7 +80,7 @@ counts <- aggregate(id ~ lon + lat, coords, length)
 stopifnot(nrow(sites) == 101L, identical(sites[c("lon", "lat")], counts[c("lon", "lat")]), sum(counts$id) == 170L)
 site_xy <- st_coordinates(st_transform(st_as_sf(sites, coords = c("lon", "lat"), crs = 4326), crs_map))
 
-#### 3. Audit the plotted scores and the K2–K4 comparison ####
+#### 3. check the plotted scores and the K2–K4 comparison ####
 pairs <- list(c(1L, 2L), c(1L, 3L), c(2L, 3L))
 separation <- function(pair, confident = FALSE) {
   eligible <- !confident | apply(Q, 1, max) >= .70
