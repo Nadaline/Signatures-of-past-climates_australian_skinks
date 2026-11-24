@@ -1,3 +1,7 @@
+# Demographic-model results: compare successful parameter estimates
+# Read the successful moments optimization outputs and organize parameter estimates, likelihoods and model comparisons for the geographic-population contrasts.
+# The results depend on the folded SFS and the specified parameterization. Distinguish numerical optimization stability from independent biological evidence.
+#
 #### Directories ####
 
 project_dir <- normalizePath(".")
@@ -28,7 +32,7 @@ stage8b <- stage8b[, c("pair", "model", "optimizer", "optimized_parameters", "lo
 
 all_runs <- rbind(pilot, stage8a, stage8b)
 
-#### Freeze reproducible maxima ####
+#### Identify consistent maximum-likelihood estimates ####
 
 groups <- split(all_runs, interaction(all_runs$pair, all_runs$model, drop = TRUE))
 maxima <- list(); convergence <- list(); limiting <- list(); parameters <- list(); comparison <- list()
