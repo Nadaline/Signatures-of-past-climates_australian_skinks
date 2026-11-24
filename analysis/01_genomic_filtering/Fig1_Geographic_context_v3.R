@@ -1,4 +1,8 @@
-#### 1. Chapter 2 sampling, public basemap and the extant NVIS MVS ####
+# Figure 1: sampling localities and geographic context
+# Draw the sampling map using existing collection coordinates, terrain information and vegetation classes. The figure provides the geographic setting for interpreting population structure; it does not infer genetic relationships.
+# The input arguments identify sampling records, an earlier geographic data source, the output location and an optional plotting setting. Confirm coordinate reference systems and geographic names before generating the map.
+#
+#### 1. Sampling localities, geographic boundaries and vegetation ####
 library(sf)
 library(terra)
 library(jsonlite)
