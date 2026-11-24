@@ -1,4 +1,8 @@
 #!/usr/bin/env Rscript
+# Historical landscape predictors in generalized dissimilarity models
+# Project the climate transformations fitted using present-day observations onto Last Interglacial and Last Glacial Maximum environmental layers. Evaluate whether these transformed historical differences improve spatially withheld predictions.
+# Check climate units before calculating environmental distances. Historical effects are tested beyond geography, contemporary climate and topographic resistance on comparable withheld pairs.
+#
 
 #### Packages ####
 
@@ -16,7 +20,7 @@ base <- file.path(project, "results", "landscape", "paleoclimate")
 dirs <- setNames(file.path(base, c("tables", "validation", "figures", "models", "logs")), c("tables", "validation", "figures", "models", "logs"))
 invisible(lapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE))
 
-#### Load Stage 5 results ####
+#### Read contemporary GDM estimates used as the reference model ####
 
 climate_variables <- c("tempRange", "tempSeason", "precAnn")
 gl <- readRDS(file.path(project, "data", "derived", "lampro_landscape_background.rds"))
