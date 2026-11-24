@@ -1,8 +1,4 @@
-# Figure 7: visual comparison of demographic histories
-# Plot model selection summaries and observed-minus-expected site-frequency spectrum residuals for the pairwise contrasts. Retain the original SFS units in the colour scale.
-# This is a figure reconstruction from existing estimates; it does not rerun demographic inference.
-#
-#### Draw demographic comparison from previously estimated model summaries
+# 1. Load model comparisons and SFS residuals ----
 args <- commandArgs(TRUE)
 stopifnot(length(args)==1,dir.exists(args[1]))
 pair <- c("K1_K3","K1_K4","K2_K4")
@@ -23,7 +19,7 @@ for(p in pair){
     max(abs(x$observed-x$expected-x$value))<1e-8)
   arrays[[p]] <- list(res=matrix(x$value,n,m),mask=matrix(x$masked,n,m))
 }
-#### Figure A: ranking and signed residuals answer different questions
+# 2. Draw AIC comparisons and residual heatmaps ----
 lim <- max(unlist(lapply(arrays,function(a) abs(a$res[!a$mask]))))
 res_cols <- colorRampPalette(c(idv[["violet"]],idv[["paper"]],idv[["amber"]]))(257)
 stretch <- function(x) asinh(x / .25)
@@ -69,6 +65,7 @@ draw_A <- function() {
   axis(1,at=stretch(ticks),labels=ticks,pos=.60,cex.axis=.75)
   mtext("Observed − expected SFS mass [asinh spacing]",1,line=.35,cex=.72)
 }
+# 3. Export the demographic figure ----
 out <- file.path(args[1],"Figure_7_baseline_demography")
 cairo_pdf(paste0(out,".pdf"),width=174/25.4,height=128/25.4,family="sans",pointsize=10)
 draw_A()

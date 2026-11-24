@@ -1,14 +1,10 @@
 #!/usr/bin/env Rscript
-# Historical landscape predictors in generalized dissimilarity models
-# Project the climate transformations fitted using present-day observations onto Last Interglacial and Last Glacial Maximum environmental layers. Evaluate whether these transformed historical differences improve spatially withheld predictions.
-# Check climate units before calculating environmental distances. Historical effects are tested beyond geography, contemporary climate and topographic resistance on comparable withheld pairs.
-#
 
-#### Packages ####
+# 1. Load packages ----
 
 suppressPackageStartupMessages({library(dartR.base); library(gdm); library(terra); library(raster); library(ggplot2)})
 
-#### Directories ####
+# 2. Define paths ----
 
 args <- commandArgs(trailingOnly = TRUE)
 project <- normalizePath(if (length(args)) args[1] else ".", mustWork = TRUE)
@@ -20,7 +16,7 @@ base <- file.path(project, "results", "landscape", "paleoclimate")
 dirs <- setNames(file.path(base, c("tables", "validation", "figures", "models", "logs")), c("tables", "validation", "figures", "models", "logs"))
 invisible(lapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE))
 
-#### Read contemporary GDM estimates used as the reference model ####
+# 3. Load the contemporary landscape model and genomic data ----
 
 climate_variables <- c("tempRange", "tempSeason", "precAnn")
 gl <- readRDS(file.path(project, "data", "derived", "lampro_landscape_background.rds"))
@@ -28,32 +24,32 @@ ids <- indNames(gl)
 resistance <- as.matrix(read.csv(file.path(project, "results", "connectivity", "source_matrices", "Lampro_resistances_pairwise.csv"), row.names = 1, check.names = FALSE))
 full_model <- readRDS(file.path(stage5, "models", "gcr_seven_models.rds"))[["CGR"]]
 
-#### Load Present climate ####
+# 4. Read contemporary CHELSA climate ----
 
 present <- rast(file.path(Sys.getenv("LAMPRO_CHELSA_DIR","data/local/chelsa"), paste0("CHELSA_", c("bio2", "bio4", "bio12"), "_1981-2010_australia.tif")))
 names(present) <- climate_variables
 
-#### Load LIG ####
+# 5. Read Last Interglacial climate ----
 
 lig_all <- readRDS(file.path(project, "data", "paleoclimate", "paleoclim_lig_5m_australia.rds"))
 lig <- rast(lig_all[[c("bio_2", "bio_4", "bio_12")]])
 names(lig) <- climate_variables
 
-#### Load LGM ####
+# 6. Read Last Glacial Maximum climate ----
 
 lgm <- rast(readRDS(file.path(project, "data", "paleoclimate", "paleoclim_lgm_5m_australia.rds")))
 names(lgm) <- climate_variables
 
-#### Harmonize climate layers ####
+# 7. Harmonise climate units ----
 
-# PaleoClim BIO2 and BIO4 are expressed in tenths of the current CHELSA units;
-# BIO12 is already in millimetres. I apply only this unit conversion.
+# Convert PaleoClim BIO2 and BIO4 to the same units as CHELSA.
+# BIO12 is already expressed in millimetres.
 lig[[c("tempRange", "tempSeason")]] <- lig[[c("tempRange", "tempSeason")]] / 10
 lgm[[c("tempRange", "tempSeason")]] <- lgm[[c("tempRange", "tempSeason")]] / 10
 writeRaster(lig, file.path(project, "data", "paleoclimate", "lig_bio2_bio4_bio12_harmonized.tif"), overwrite = TRUE)
 writeRaster(lgm, file.path(project, "data", "paleoclimate", "lgm_bio2_bio4_bio12_harmonized.tif"), overwrite = TRUE)
 
-#### Check sampled localities ####
+# 8. Extract climate at sampling localities ----
 
 coords <- as.data.frame(gl@other$latlon)
 names(coords)[match(c("lon", "lat"), names(coords))] <- c("X", "Y")
@@ -76,7 +72,7 @@ folds <- read.csv(file.path(stage5, "validation", "spatial_folds.csv"))
 env$fold <- folds$fold[match(env$id, folds$id)]
 stopifnot(nrow(env) == 170, !anyNA(env$fold), isTRUE(all.equal(resistance, t(resistance))))
 
-#### GDM helpers ####
+# 9. Define GDM fitting and prediction functions ----
 
 matrix_data <- function(x, index) { z <- x[index, index, drop = FALSE]; out <- data.frame(site = seq_along(index), z, check.names = FALSE); names(out)[-1] <- seq_along(index); out }
 sitepair <- function(index, historical = NULL) {
@@ -91,10 +87,9 @@ sitepair <- function(index, historical = NULL) {
 fit_model <- function(index, historical = NULL) gdm(sitepair(index, historical), geo = TRUE)
 performance <- function(model, table) { predicted <- as.numeric(predict(model, table)); observed <- table$distance; data.frame(n_pairs = nrow(table), rmse = sqrt(mean((observed - predicted)^2)), mae = mean(abs(observed - predicted)), correlation = if (sd(predicted) > 0) cor(observed, predicted) else NA_real_) }
 
-#### Transform climate with GDM splines ####
+# 10. Apply contemporary I-spline transformations ----
 
-# I interpolate the climate I-splines fitted by M2. This uses the contemporary
-# genomic transformation but does not refit a genomic response to palaeoclimate.
+# Use the climate response estimated by the contemporary model M2.
 transformed_distance <- function(model, values) {
   sp <- isplineExtract(model)
   out <- matrix(0, nrow(values), nrow(values))
@@ -106,7 +101,7 @@ transformed_distance <- function(model, values) {
   out
 }
 
-#### Pairwise palaeoclimate distances ####
+# 11. Calculate pairwise historical climate distances ----
 
 c_present <- transformed_distance(full_model, present_values)
 c_lig <- transformed_distance(full_model, lig_values)
@@ -119,7 +114,7 @@ write.csv(pair_table, file.path(dirs["tables"], "palaeo_pairwise_climate_distanc
 write.csv(cor(pair_table[, 3:7], method = "spearman"), file.path(dirs["tables"], "historical_predictor_correlations.csv"), row.names = TRUE)
 write.csv(data.frame(metric = c("PaleoMean", "PaleoChange"), formula = c("(C_LIG + C_LGM) / 2", "abs(C_LIG - C_LGM)")), file.path(dirs["tables"], "historical_predictor_definition.csv"), row.names = FALSE)
 
-#### Spatial cross-validation ####
+# 12. Compare models using spatial folds ----
 
 cv_rows <- list(); gain_rows <- list()
 for (f in sort(unique(env$fold))) {
@@ -138,7 +133,7 @@ cv <- do.call(rbind, cv_rows); gains <- do.call(rbind, gain_rows)
 write.csv(cv, file.path(dirs["validation"], "historical_model_comparison.csv"), row.names = FALSE)
 write.csv(gains, file.path(dirs["validation"], "historical_cv_incremental_effects.csv"), row.names = FALSE)
 
-#### Historical null models ####
+# 13. Test historical predictors against a spatial null ----
 
 permute_localities <- function(index, values) {
   out <- values
@@ -172,7 +167,7 @@ null_mean <- aggregate(paleo_gain_rmse ~ permutation, nulls[nulls$permutation > 
 null_summary <- data.frame(metric = "PaleoMean", observed_mean_rmse_gain = observed, null_mean = mean(null_mean$paleo_gain_rmse), null_median = median(null_mean$paleo_gain_rmse), null_q025 = quantile(null_mean$paleo_gain_rmse, .025), null_q975 = quantile(null_mean$paleo_gain_rmse, .975), p_value = (1 + sum(null_mean$paleo_gain_rmse >= observed)) / (n_perm_final + 1), nperm = n_perm_final)
 write.csv(null_summary, file.path(dirs["validation"], "historical_null_summary.csv"), row.names = FALSE)
 
-#### Figures ####
+# 14. Plot historical model comparisons ----
 
 cv_plot <- ggplot(cv, aes(model, rmse, group = fold)) + geom_hline(yintercept = 0, colour = "white") + geom_line(colour = "grey70") + geom_point(aes(colour = model), size = 2) + theme_classic() + guides(colour = "none") + labs(x = NULL, y = "Held-out RMSE")
 ggsave(file.path(dirs["figures"], "historical_spatial_cv.png"), cv_plot, width = 7, height = 5, dpi = 240)
@@ -182,7 +177,7 @@ ggsave(file.path(dirs["figures"], "historical_fold_gains.png"), gain_plot, width
 null_plot <- ggplot(null_mean, aes(paleo_gain_rmse)) + geom_histogram(bins = 35, fill = "grey75", colour = "white") + geom_vline(xintercept = observed, colour = "#8F3B3F", linewidth = .9) + theme_classic() + labs(x = "Mean held-out RMSE gain", y = "Spatial-null permutations")
 ggsave(file.path(dirs["figures"], "historical_null.png"), null_plot, width = 7, height = 5, dpi = 240)
 
-#### Save results ####
+# 15. Save model estimates and validation results ----
 
 write.csv(data.frame(seed = seed, n_perm_final = n_perm_final, primary_metric = "PaleoMean", final_climate_variables = paste(climate_variables, collapse = ";"), genomic_input = file.path(project, "data", "derived", "lampro_landscape_background.rds")), file.path(dirs["logs"], "parameters.csv"), row.names = FALSE)
 capture.output(sessionInfo(), file = file.path(dirs["logs"], "sessionInfo.txt"))

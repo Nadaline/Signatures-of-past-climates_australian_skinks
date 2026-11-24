@@ -1,24 +1,22 @@
 #!/usr/bin/env bash
-# Include the original research figures and illustrations
-# Copy previously prepared graphical files from the research repository without replacing the figures already used by this study.
-# This script transfers existing assets only. It does not generate or reanalyse genomic data.
-#
-# Add original binary assets from the private research repository without
-# overwriting the chapter figures already published from the R7 thesis.
 set -euo pipefail
 
+# 1. Set repository addresses and a temporary directory
 SOURCE_URL="https://github.com/Nadaline/Lampropholis-delicata-genomic-history-staging.git"
 PUBLIC_URL="https://github.com/Nadaline/Signatures-of-past-climates_australian_skinks.git"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# 2. Clone source and destination repositories
 git clone --depth 1 --branch docs/reader-guided-reproducibility "$SOURCE_URL" "$WORK/source"
 git clone --depth 1 "$PUBLIC_URL" "$WORK/public"
 
+# 3. Copy missing PNG and PDF files
 rsync -a --ignore-existing \
   --include='*/' --include='*.png' --include='*.pdf' \
   --exclude='*' "$WORK/source/" "$WORK/public/"
 
+# 4. Commit and publish the assets
 cd "$WORK/public"
 git add assets/ design/ results/ || true
 if git diff --cached --quiet; then

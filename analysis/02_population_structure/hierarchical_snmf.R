@@ -1,14 +1,10 @@
 #!/usr/bin/env Rscript
-# Nested sNMF analyses within broad genetic clusters
-# Estimate fine-scale structure separately within selected components of the global K = 4 solution. Comparing nested solutions helps describe regional variation that is not visible at the range-wide scale.
-# Keep individual order identical between the genotype matrix and ancestry table. Evaluate cross-entropy, replicate agreement and component sizes together when interpreting a nested K.
-#
 
-#### Packages ####
+# 1. Load packages ----
 
 suppressPackageStartupMessages({library(LEA); library(mclust); library(ggplot2)})
 
-#### Directories ####
+# 2. Define input and output directories ----
 
 args <- commandArgs(trailingOnly = TRUE)
 project <- normalizePath(if (length(args)) args[1] else ".", mustWork = TRUE)
@@ -23,7 +19,7 @@ n_replicates <- 10L
 n_cpu <- min(n_replicates, max(1L, parallel::detectCores() - 1L))
 q_threshold <- 0.70
 
-#### Load global K4 structure ####
+# 3. Read the global K = 4 ancestry coefficients ----
 
 q4 <- read.csv(file.path(project, "tables", "snmf_selected_qmatrix_k4.csv"), stringsAsFactors = FALSE, check.names = FALSE)
 stopifnot(identical(names(q4), c("id", "K1", "K2", "K3", "K4")), nrow(q4) == 170)
@@ -33,17 +29,15 @@ q4$global_max_q <- apply(q4[, c("K1", "K2", "K3", "K4")], 1, max)
 q4$parent_eligible <- q4$global_max_q >= q_threshold
 write.csv(q4, file.path(out, "global_k4_ancestry_audit.csv"), row.names = FALSE)
 
-#### Load the matching sNMF genotype input ####
+# 4. Read the corresponding SNP matrix ----
 
-# The global portable LEA project records n = 170 and L = 19,352. LEA's .geno
-# format has one locus per line and one individual per character column. The
-# columns have no embedded IDs, so their order is validated against the K4 Q
-# table before each parent subset is written.
+# In LEA's .geno format, rows are loci and columns are individuals.
+# Match the column order to the 170 individuals in the global Q matrix.
 global_geno <- file.path(parent_project, "ref5.geno")
 geno_lines <- readLines(global_geno)
 stopifnot(length(geno_lines) == 19352, all(nchar(geno_lines) == nrow(q4)))
 
-#### Prepare parent groups ####
+# 5. Select individuals for nested analyses ----
 
 parent_counts <- aggregate(id ~ global_component + parent_eligible, q4, length)
 names(parent_counts)[3] <- "n_individuals"
@@ -52,12 +46,11 @@ parent_sizes <- setNames(vapply(paste0("K", 1:4), function(k) sum(q4$global_comp
 child_k <- lapply(parent_sizes, function(n) {
   if (n < 15) 1:2 else 1:min(5, floor(n / 4))
 })
-# I choose the hierarchy only after inspecting entropy, replicate agreement and
-# component sizes. K4-child K=3 has the lowest mean entropy but isolates two
-# individuals; I retain the stable K=2 representation as the conservative level.
+# For nested K4, K = 3 has lower mean cross-entropy but isolates two individuals.
+# K = 2 provides the more stable regional subdivision.
 final_child_k <- c(K1 = 1L, K2 = 1L, K3 = 3L, K4 = 2L)
 
-#### Run sNMF within each parent component ####
+# 6. Fit sNMF within each parent cluster ----
 
 run_rows <- list()
 model_rows <- list()
@@ -101,7 +94,7 @@ for (parent in names(parent_sizes)) {
     child_max_q = apply(q_child, 1, max), as.data.frame(q_child))
 }
 
-#### Inspect model selection ####
+# 7. Compare cross-entropy and replicate agreement ----
 
 runs <- do.call(rbind, run_rows)
 models <- do.call(rbind, model_rows)
@@ -123,7 +116,7 @@ write.csv(assignments, file.path(out, "hierarchical_snmf_assignments.csv"), row.
 write.csv(data.frame(parent = names(final_child_k), selected_child_K = as.integer(final_child_k), decision = c("no child split", "no child split", "three reproducible child components", "two-child conservative split; child K=3 isolates two individuals")), file.path(out, "hierarchical_snmf_final_hierarchy.csv"), row.names = FALSE)
 write.csv(data.frame(status = "NOT_AVAILABLE", reason = "No sample- or locality-level Chapple mtDNA clade crosswalk was found in the project files; nuclear child K was selected independently."), file.path(out, "hierarchical_snmf_chapple_correspondence.csv"), row.names = FALSE)
 
-#### Figures ####
+# 8. Map nested ancestry ----
 
 coords <- read.csv(file.path(stage5 <- file.path(project, "results", "landscape", "gdm_definitive"), "validation", "spatial_folds.csv"), stringsAsFactors = FALSE)
 coords$id <- as.character(coords$id)
@@ -135,7 +128,7 @@ map <- ggplot(plot_data, aes(X, Y, colour = hierarchical_component, shape = glob
   labs(x = "Longitude", y = "Latitude", colour = "Nested nuclear component", shape = "Global K4 component")
 ggsave(file.path(figures, "hierarchical_snmf_map.png"), map, width = 7.5, height = 7, dpi = 300)
 
-#### Save summary ####
+# 9. Save ancestry estimates and model summaries ----
 
 summary_lines <- c(
   "# Hierarchical sNMF", "",

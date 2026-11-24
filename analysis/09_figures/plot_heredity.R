@@ -1,8 +1,4 @@
-# Figures integrating contemporary and historical landscape evidence
-# Prepare vector graphics that compare geographic structure, spatial validation, historical environmental contributions and nuclear relationships.
-# Plots combine estimates made by different methods; they do not imply that predictor gains, ancestry components and phylogenetic support share a common statistical scale.
-#
-#### Vector figures from fitted-model and matched cross-validation tables ####
+# 1. Read the map, genetic palette and validation tables ----
 suppressPackageStartupMessages({library(sf);library(ape)})
 a <- commandArgs(TRUE); p <- a[1]; out <- a[2]; local <- a[3]
 t <- file.path(out,"tables")
@@ -16,6 +12,7 @@ xy <- function(lon,lat) st_coordinates(st_transform(st_as_sf(data.frame(lon,lat)
 aa <- subset(read("random_fold_assignments.csv"),repetition==1)
 points_map <- xy(aa$X,aa$Y)
 bx <- range(points_map[,1])+c(-125000,130000); by <- range(points_map[,2])+c(-100000,110000)
+# 2. Define the map and figure export functions ----
 setup <- function() par(family="sans",fg=ink,col.lab=ink,col.axis=ink,mgp=c(1.65,.44,0),tcl=-.22,las=1)
 map <- function() {
   plot(NA,xlim=bx,ylim=by,asp=1,axes=FALSE,xlab="",ylab="",xaxs="i",yaxs="i")
@@ -27,6 +24,7 @@ save <- function(stem,w,h,draw) {
   png(paste0(stem,".png"),w,h,units="in",res=600,type="cairo",pointsize=8.8,bg="white")
   draw(); invisible(dev.off())
 }
+# 3. Compare random and spatial cross-validation ----
 national <- read("random_cv_summary.csv")
 regional <- subset(read("regional_cv_summary.csv"),metric=="delta_gain")
 region_names <- c("VIC, TAS & far SE NSW","Central–southern NSW","Northern NSW & SE QLD","Northern QLD","South Australia")
@@ -75,7 +73,7 @@ draw_cv <- function() {
 }
 save(file.path(out,"supplementary/Figure_S_Random_vs_Spatial_CrossValidation"),6.9,7.9,draw_cv)
 
-#### Main discussion synthesis: observed, predictive, and historical evidence ####
+# 4. Summarise contemporary, historical and demographic evidence ----
 s5 <- file.path(p,"results/landscape/gdm_definitive")
 s6 <- file.path(p,"results/landscape/paleoclimate")
 cs <- read.csv(file.path(s5,"validation/spatial_group_null_summary.csv"))
@@ -123,7 +121,7 @@ draw_main <- function() {
 }
 save(file.path(out,"main/Figure_Heredity_scientific_synthesis"),7.2,4.45,draw_main)
 
-#### Focused taxonomic supplement: original topology and recorded ancestry ####
+# 5. Compare nuclear relationships and ancestry in the Bunya samples ----
 tax <- file.path(local,"results/Lampropholis_demographic_chronology/qage")
 v <- read.csv(file.path(tax,"tables/LAMPROPHOLIS_SAMPLE_SPECIES_CROSSWALK.csv"),colClasses=c(sample_id="character"))
 ids <- c("411716",as.character(411828:411834),"411710")

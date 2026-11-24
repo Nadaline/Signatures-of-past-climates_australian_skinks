@@ -1,8 +1,4 @@
-# Figure 5: additional predictive contribution of historical climates
-# Display the contribution of Last Interglacial and Last Glacial Maximum environments to genetic dissimilarity after accounting for contemporary landscape predictors. This script visualizes model comparisons using saved predictions.
-# Compare the same held-out localities across models; palaeoclimate predictors describe environmental contrasts and do not date population splits.
-#
-#### 1. Historical-climate model results ####
+# 1. Read historical model comparisons and spatial predictions ----
 library(sf)
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 3L)
@@ -36,7 +32,7 @@ stopifnot(nrow(loc) == 101L, nrow(gain) == nrow(loc), !anyDuplicated(k(loc)), !a
 tas <- tas[match(c("all_heldout_pairs", "without_Tasmania_pairs", "without_Tasmania_containing_fold"),
   tas$diagnostic), ]
 stopifnot(!anyNA(tas$Delta_RMSE), all(tas$Delta_RMSE > 0), all(is.finite(gain$mean_pairwise_gain_squared_error)))
-# Verify the plotted summaries from saved prediction errors, without fitting a model.
+# 2. Calculate RMSE changes for geographic subsets ----
 rmse_pair <- function(p) sqrt(mean(p$squared_error_M2)) - sqrt(mean(p$squared_error_M3))
 tas_fold <- unique(pairs$fold[pairs$lat1 < -39 | pairs$lat2 < -39])
 stopifnot(identical(tas_fold, 1L))
@@ -51,7 +47,7 @@ local_means <- tapply(endpoint$value, k(endpoint), mean)
 stopifnot(setequal(names(local_means), k(gain)),
   max(abs(unname(local_means[k(gain)]) - gain$mean_pairwise_gain_squared_error)) < 1e-12)
 
-#### 2. Shared projected coast and display scales ####
+# 3. Prepare the sampling map and colour scales ----
 crs_map <- 9473
 states <- st_read(basemap, quiet = TRUE)
 states <- states[states$state_code_2016 %in% as.character(1:8), ]
@@ -83,7 +79,7 @@ page <- c(450, 567)
 fig <- function(x1,x2,y1,y2) c(x1,x2,y1,y2)/rep(page, each = 2)
 axis_col <- "#716687"
 
-#### 3. Single six-panel plate ####
+# 4. Draw the palaeoclimate comparison ----
 draw <- function() {
   par(mar=rep(0,4),family="sans",xaxs="i",yaxs="i",fg=ink,col.axis=ink,col.lab=ink)
   plot.new(); plot.window(c(0,page[1]),c(0,page[2]))
@@ -174,6 +170,7 @@ draw <- function() {
   mtext("Pooled ΔRMSE (×10⁻³)",1,line=1.51,cex=.93)
 }
 
+# 5. Export the figure ----
 stem <- file.path(out,"Figure5_palaeoclimate_final")
 cairo_pdf(paste0(stem,".pdf"),width=page[1]/72,height=page[2]/72,pointsize=9,bg="white")
 draw(); invisible(dev.off())

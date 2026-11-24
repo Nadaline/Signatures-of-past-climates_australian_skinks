@@ -1,8 +1,4 @@
-# Figure 2: genetic structure across the sampled range
-# Combine observed sampling locations with principal coordinate analysis (PCoA) and sNMF ancestry coefficients. These complementary summaries illustrate genetic variation without treating ancestry components as named populations or species.
-# The plots use previously estimated ordination and sNMF results. Check that sample identifiers agree across coordinate, PCoA and ancestry tables before drawing the panels.
-#
-#### 1. Read sampling coordinates and global and nested ancestry estimates ####
+# 1. Load PCoA and sNMF results ----
 library(sf)
 library(terra)
 args <- commandArgs(TRUE)
@@ -15,6 +11,7 @@ stopifnot(phase %in% c("preview", "final"))
 pal <- read.csv(file.path(out, "P4_palette.csv"))
 pal <- setNames(pal$colour, pal$role)
 K <- paste0("K", 1:4)
+# Read the ordination scores and match individuals to ancestry coefficients.
 coords <- read.csv(file.path(project, "population_structure", "pcoa_scores.csv"),
   colClasses = c(id = "character"))
 arch <- readRDS(file.path(project, "..", "Reference", "pcoa.ref7.rds"))
@@ -37,6 +34,7 @@ stopifnot(nrow(long) == 680L, !anyNA(ij), !anyDuplicated(ij),
   max(abs(Q[ij] - long$q)) < 1e-8,
   all(long$longitude == coords$lon[ij[, 1]]), all(long$latitude == coords$lat[ij[, 1]]))
 dom <- K[max.col(Q, ties.method = "first")]
+# Read the nested sNMF assignments for K3 and K4.
 hier <- file.path(project, "results", "structure", "hierarchical_snmf")
 h <- read.csv(file.path(hier, "hierarchical_snmf_assignments.csv"), colClasses = c(id = "character"))
 decision <- read.csv(file.path(hier, "hierarchical_snmf_final_hierarchy.csv"))
@@ -54,7 +52,7 @@ nested_ids <- lapply(names(children), function(k) {
 names(nested_ids) <- names(children)
 stopifnot(identical(lengths(nested_ids), c(K3 = 56L, K4 = 45L)))
 
-#### 2. Geographic ordering is independent of the ancestry coefficients ####
+# 2. Order samples geographically ----
 crs_map <- 9473
 states <- st_read(boundary, quiet = TRUE)
 states <- states[states$state_code_2016 %in% as.character(1:8), ]
@@ -80,7 +78,7 @@ counts <- aggregate(id ~ lon + lat, coords, length)
 stopifnot(nrow(sites) == 101L, identical(sites[c("lon", "lat")], counts[c("lon", "lat")]), sum(counts$id) == 170L)
 site_xy <- st_coordinates(st_transform(st_as_sf(sites, coords = c("lon", "lat"), crs = 4326), crs_map))
 
-#### 3. check the plotted scores and the K2–K4 comparison ####
+# 3. Summarise separation along the PCoA axes ----
 pairs <- list(c(1L, 2L), c(1L, 3L), c(2L, 3L))
 separation <- function(pair, confident = FALSE) {
   eligible <- !confident | apply(Q, 1, max) >= .70
@@ -103,7 +101,7 @@ print(data.frame(axis = 1:3, percent))
 print(sep)
 print(table(region))
 
-#### 4. Common typography and layout helpers ####
+# 4. Define plotting functions ----
 struct <- pal["structural"]
 ink <- "#3C3747"
 lim <- lapply(1:3, function(j) range(scores[, j]) + c(-1.1, 1.1))
@@ -180,7 +178,7 @@ bars <- function(rect, mat, label, groups, state_names = FALSE, axis_left = TRUE
   }
 }
 
-#### 5. Four projected maps and the two proposed compositions ####
+# 5. Assemble maps and ancestry plots ----
 map_bounds <- c(260000, 2140000, -4920000, -2010000)
 qcolour <- function(group, q) {
   base <- as.numeric(col2rgb(pal[group])) / 255
@@ -268,7 +266,7 @@ draw_supp <- function() {
   global_key(c(.278,.746,.026,.14))
 }
 
-#### 6. Two 450 pt proofs; retain the main figure and the two-plane supplement ####
+# 6. Export the main and supplementary figures ----
 proof <- file.path(out, paste0("Fig2_composition_", 1:2, ".png"))
 height <- c(850, 490)
 draw <- list(draw_full, draw_main)

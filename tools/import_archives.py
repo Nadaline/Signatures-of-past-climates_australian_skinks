@@ -1,11 +1,13 @@
-"""Copy selected analysis outputs into a shareable repository. Collect existing summary tables, figures and supporting inputs from specified research folders while retaining their source provenance. No statistical models are fitted by this utility. Preserve original scientific files and sample confidentiality; consult the data documentation before distributing individual-level data."""
+"""Collect figures, analysis scripts and summary tables with file provenance."""
 from pathlib import Path
 import hashlib, csv, shutil, sys, re
+# 1. Locate the research results
 root=Path(sys.argv[1]).resolve()
 out=Path(__file__).resolve().parents[1]
 ch=root/'Chapter2_Lampropholis_Heredity'
 r6=root/'R6_Lampropholis_candidate'
 prov=[]
+# 2. Record file hashes and copy selected outputs
 def sha(p):
     with p.open('rb') as f:
         return hashlib.file_digest(f,'sha256').hexdigest()
@@ -15,6 +17,7 @@ def put(src,dst,change=None,status='archived; unchanged'):
     if change: f.write_text(change(src.read_text()))
     else: shutil.copyfile(src,f)
     prov.append([dst,str(src.relative_to(root)),sha(src),sha(f),f.stat().st_size,status])
+# 3. Collect main figures and their scripts
 sources=[
 ('geographic_context','Fig1_Geographic_context_v3','01_genomic_filtering','Fig1_Geographic_context_v3.R'),
 ('nuclear_structure','Fig2_Nuclear_structure','02_population_structure','Fig2_Nuclear_structure.R'),
@@ -38,6 +41,7 @@ for folder,script in [
     x=scripts/script
     f=(lambda s:s.replace('"/projects/rstudio-export/Lampro"','Sys.getenv("LAMPRO_CHELSA_DIR","data/local/chelsa")')) if folder.startswith(('05','06')) else None
     put(x,f'analysis/{folder}/{script}',f,'only CHELSA path made configurable' if f else 'archived; unchanged')
+# 4. Collect summary tables
 tables={
 'structure':['snmf_k_selection','snmf_cross_entropy','hierarchical_snmf_parent_counts'],
 'phylogeny':['svdquartets_final_run_summary'],
@@ -56,6 +60,7 @@ put(r6/'03_tables/moments/Figure7_R6_source_data.csv',
     'Figure A rows selected; original numeric values unchanged')
 put(ch/'04_reproducibility/notes/chapter2_palette.csv','design/idv/palette/chapter2_palette.csv')
 put(r6/'02_supplementary_figures/FigureS_demography_baseline_R6.pdf','results/figures/Figure_S_demography_baseline.pdf')
+# 5. Prepare the population diversity script
 def lampro(s):
     def drop(a,b):
         nonlocal s
@@ -79,6 +84,7 @@ stopifnot(all(file.exists(sources)))
     return s
 put(scripts/'population_genetics/population_genetics.R','analysis/09_population_diversity/population_genetics.R',
     lampro,'isolated Lampropholis branch and paths; bootstrap draws may differ because original run advanced RNG before this branch')
+# 6. Prepare the standalone demographic figure
 def fig7(s):
     draw=s[s.index('#### Figure A:'):s.index('#### Figure B:')].rstrip()
     return '''#### Rebuild candidate A from archived summary values, not model fitting
@@ -113,6 +119,7 @@ dev.off()
 '''
 put(r6/'04_reproducibility/scripts/Figure7_R6_reproducible.R',
     'analysis/08_demography/plot_figure7_archived.R',fig7,'standalone plot from archived values; original draw_A retained')
+# 7. Include available fitting scripts
 if len(sys.argv)>2:
     external=Path(sys.argv[2])
     for name in ('stage8_moments_models.py','stage8b_confirmatory.py','stage8b_residual_arrays.py'):
@@ -127,6 +134,7 @@ if len(sys.argv)>2:
         dest=out/path
         dest.write_text(re.sub(r'/home/[^}\n]+/bin/treemix','treemix',f.read_text()))
         prov.append([path,'Lampropholis archive/treemix/run_treemix.sh',sha(f),sha(dest),dest.stat().st_size,'only executable default path made configurable'])
+# 8. Write the file provenance table
 (out/'docs').mkdir(exist_ok=True)
 with (out/'docs/artifact_provenance.tsv').open('w',newline='') as f:
     w=csv.writer(f,delimiter='\t');w.writerow(('path','source_role','source_sha256','staged_sha256','bytes','notes'));w.writerows(sorted(prov))

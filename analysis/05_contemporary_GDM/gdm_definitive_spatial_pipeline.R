@@ -1,14 +1,6 @@
 #!/usr/bin/env Rscript
-# Contemporary generalized dissimilarity models with spatial validation
-# Fit and compare models based on geographic distance, present-day climate and effective topographic resistance. Cross-validation withholds entire sampling localities so related pairwise observations do not leak into training data.
-# Climate predictors are selected using training localities. Conditional tests randomize the relevant training information within spatial blocks while keeping held-out observations unchanged.
-#
 
-# I fit the contemporary landscape GDM from first principles. Geography and
-# direct Circuitscape effective topographic resistance is fixed; current CHELSA variables
-# are selected inside each spatial training fold. I never permute pair rows:
-# climate values are permuted at sampling localities within broad spatial
-# blocks, and the pair table is rebuilt after every permutation.
+# 1. Load packages ----
 
 options(stringsAsFactors = FALSE)
 suppressPackageStartupMessages({
@@ -19,10 +11,9 @@ suppressPackageStartupMessages({
 args <- commandArgs(trailingOnly = TRUE)
 project <- normalizePath(if (length(args)) args[1] else ".", mustWork = TRUE)
 seed <- if (length(args) >= 2) as.integer(args[2]) else 20260811L
-#### Analysis settings ####
+# 2. Set model and permutation parameters ----
 
-# I keep a small test setting for preparation and a separate value for the
-# future full analysis.  The final setting is deliberately not run here.
+# Permutation counts for predictor screening and conditional inference.
 n_perm_test <- if (length(args) >= 3) as.integer(args[3]) else 19L
 n_perm_final <- if (length(args) >= 5) as.integer(args[5]) else 999L
 nfold <- if (length(args) >= 4) as.integer(args[4]) else 5L
@@ -45,10 +36,10 @@ bio_names <- c(tempMean="bio1",tempRange="bio2",isotherm="bio3",tempSeason="bio4
  tempWarmQ="bio10",tempColdQ="bio11",precAnn="bio12",precWetM="bio13",
  precDryM="bio14",precSeason="bio15",precWetQ="bio16",precDryQ="bio17",
  precWarmQ="bio18",precColdQ="bio19")
-# Within nearly identical clusters I prioritize direct, interpretable thermal
-# and water-balance axes that have equivalents in present, LGM, and LIG.
+# Prefer interpretable temperature and precipitation variables among highly correlated predictors.
 priority <- names(bio_names)
 
+# 3. Read genotypes, resistance and climate layers ----
 gen_file <- file.path(project,"data","derived","lampro_landscape_background.rds")
 res_file <- file.path(project,"results","connectivity","source_matrices","Lampro_resistances_pairwise.csv")
 clim_dir <- Sys.getenv("LAMPRO_CHELSA_DIR","data/local/chelsa")
@@ -74,11 +65,9 @@ gen <- as.matrix(gl.dist.ind(gl,scale=TRUE)); gen <- gen[common,common,drop=FALS
 stopifnot(isTRUE(all.equal(res,t(res))),all(diag(res)==0))
 env$site <- seq_len(nrow(env)); rownames(env)<-common
 
-# Spatial folds are assigned to unique localities, never to pair rows. K-means
-# is run on equal-area coordinates so each locality and all its individuals stay
-# together. No pair touching a test individual enters training.
-# A local equirectangular approximation is sufficient for fold assignment and
-# avoids any runtime dependency on online PROJ grids.
+# 4. Assign sampling localities to spatial folds ----
+# Use k-means on locally projected coordinates; samples from one locality share a fold.
+# Each test pair contains two withheld localities or individuals from the same fold.
 lat0 <- mean(env$Y) * pi/180
 xy_m <- cbind(x=env$X*cos(lat0)*111.32, y=env$Y*110.57)
 loc_key <- paste(round(env$X,5),round(env$Y,5),sep="_")
@@ -87,6 +76,7 @@ fold_map <- setNames(km$cluster,loc_key[u]); env$fold <- unname(fold_map[loc_key
 folds <- env[,c("id","site","X","Y","fold")]
 write.csv(folds,file.path(dirs["validation"],"spatial_folds.csv"),row.names=FALSE)
 
+# 5. Define pairwise data and GDM fitting functions ----
 matrix_df <- function(mat, idx) {
   z <- mat[idx,idx,drop=FALSE]; d <- data.frame(site=seq_along(idx),z,check.names=FALSE)
   names(d)[-1] <- as.character(seq_along(idx)); d
@@ -110,6 +100,7 @@ metric <- function(model,tab) {
              correlation=if(sd(pr)>0) cor(ob,pr) else NA_real_)
 }
 
+# 6. Screen correlated climate predictors ----
 redundancy_filter <- function(idx,vars,threshold=.92) {
   cm <- cor(env[idx,vars,drop=FALSE],use="pairwise.complete.obs",method="spearman")
   hc <- hclust(as.dist(1-abs(cm)),method="average"); cl <- cutree(hc,h=1-threshold)
@@ -120,11 +111,11 @@ redundancy_filter <- function(idx,vars,threshold=.92) {
   list(vars=unname(chosen),cor=cm,table=tab)
 }
 
+# 7. Define spatial permutation procedures ----
 permute_site_variable <- function(idx,var,ep=NULL) {
   if(is.null(ep)) ep <- env[idx,,drop=FALSE]
-  # I permute locality-level climate values within each broad training block.
-  # Replicates at one coordinate move together; pair dependence and coarse
-  # spatial structure are retained.
+  # Permute climate values among localities within each training block.
+  # Individuals at the same locality share the permuted value.
   lk <- paste(round(ep$X,5),round(ep$Y,5),sep="_")
   for(b in unique(ep$fold)) {
     ub <- unique(lk[ep$fold==b]); if(length(ub)<2) next
@@ -139,9 +130,8 @@ permute_resistance_labels <- function(idx) {
   perm <- seq_len(nrow(env))
   for(b in unique(env$fold[idx])) {
     ib <- idx[env$fold[idx]==b]
-    # Individuals collected at an identical locality are moved as one unit by
-    # matching locality groups; where group sizes differ, individual labels are
-    # permuted within the same broad block. Pair rows themselves never move.
+    # Permute resistance labels among localities with matching sample sizes.
+    # Within blocks with different group sizes, permute individual labels.
     perm[ib] <- sample(ib,length(ib),replace=FALSE)
   }
   res[perm,perm,drop=FALSE]
@@ -176,6 +166,7 @@ backward_select <- function(idx,candidates) {
 }
 
 logit("Starting nested spatial CV for",nrow(env),"individuals and",nLoc(gl),"SNPs")
+# 8. Fit and evaluate models across spatial folds ----
 fold_results <- list(); selections <- list(); screens <- list(); redund <- list(); model_store <- list()
 for(f in seq_len(nfold)) {
   logit("Fold",f,"of",nfold)
@@ -203,10 +194,8 @@ write.csv(freq,file.path(dirs["validation"],"climate_selection_stability.csv"),r
 write.csv(cv,file.path(dirs["validation"],"spatial_cv_model_comparison.csv"),row.names=FALSE)
 saveRDS(model_store,file.path(dirs["models"],"spatial_fold_models.rds"))
 
-# Pair-compatible incremental null models. I compare the observed out-of-sample
-# RMSE gain of climate over G+R and resistance over G+C with gains obtained when
-# the relevant information is randomized at individuals/localities inside each
-# training block. Test data remain untouched.
+# 9. Compare incremental climate and resistance effects ----
+# Permute training predictors within spatial blocks and compare held-out RMSE gains.
 null_rows <- list()
 for(f in seq_len(nfold)) {
   train <- which(env$fold!=f); test <- which(env$fold==f)
@@ -242,8 +231,7 @@ null_summary <- data.frame(group=c("Current climate","Effective resistance"),
            (1+sum(nul$resistance_gain_rmse>=obs[2]))/(n_perm_final+1)),nperm=n_perm_final)
 write.csv(null_summary,file.path(dirs["validation"],"spatial_group_null_summary.csv"),row.names=FALSE)
 
-# Stable final climate set: selected by a majority of spatial folds. This is
-# a transparent stability rule, applied after inspecting the fold results.
+# 10. Select climate variables supported across most folds ----
 final_clim <- freq$variable[freq$selection_frequency>.50]
 if(!length(final_clim)) final_clim <- freq$variable[freq$selection_frequency==max(freq$selection_frequency)]
 full_idx <- seq_len(nrow(env)); final_screen <- conditional_screen(full_idx,final_clim)
@@ -253,14 +241,13 @@ final_variables$BIOCLIM <- unname(bio_names[final_variables$variable])
 final_variables$reason <- "selected in a majority of spatial training folds and retained after conditional screening"
 write.csv(final_variables,file.path(dirs["tables"],"final_current_climate_variables.csv"),row.names=FALSE)
 
-# Official gdm.varImp is preserved as a method-sensitivity output. Its native
-# pair-row permutations are not used for inferential p-values; the locality-
-# level compatible null above is the inferential result.
+# Compare the GDM package's variable importance with the locality-based conditional tests.
 full_tab <- sitepair(full_idx,final_clim,resistance=TRUE)
 official <- gdm.varImp(full_tab,geo=TRUE,predSelect=FALSE,nPerm=n_perm_test,parallel=FALSE)
 capture.output(official,file=file.path(dirs["tables"],"gdm_varImp_official_sensitivity.txt"))
 
 sets <- expand.grid(G=c(FALSE,TRUE),C=c(FALSE,TRUE),R=c(FALSE,TRUE)); sets<-sets[rowSums(sets)>0,]
+# 11. Fit models to the full dataset ----
 mods<-list(); rows<-list()
 for(i in seq_len(nrow(sets))) {
  s<-sets[i,]; key<-paste(sort(c("G","C","R")[unlist(s)]),collapse="")

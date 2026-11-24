@@ -1,8 +1,4 @@
-# Genetic diversity among geographic population groups
-# Calculate population diversity and pairwise differentiation from eligible observed SNP genotypes, using the 14 TreeMix geographic groups and complementary ancestry-defined groupings.
-# The estimates describe the assayed RAD markers and should not be interpreted as per-base whole-genome diversity. Distinguish geographic partitions from nuclear ancestry assignments.
-#
-#### 1. Load the observed (not imputed) final panels ####
+# 1. Load observed SNP genotypes and population assignments ----
 args <- commandArgs(TRUE)
 stopifnot(length(args)==2, args[1] %in% c("pilot","final"))
 pilot <- args[1]=="pilot"
@@ -20,7 +16,7 @@ order_ids <- function(key,ids){
   stopifnot(!anyDuplicated(key),!anyDuplicated(ids),all(ids %in% key))
   match(ids,key)
 }
-# Decode serialized adegenet SNPbin bit arrays; check against original VCF below.
+# Decode the SNPbin genotype representation used by adegenet.
 decode <- function(z) {
   ids <- attr(z,"ind.names")
   loci <- attr(z,"loc.names")
@@ -62,9 +58,9 @@ Lmeta <- data.frame(id=rownames(L),population=gpop,geographic_label=lc$geographi
                     metadata_POP=lm$Analytical_locality,lq)
 stopifnot(all(table(gpop)[gpop[is.na(s) & gpop!="unknown"]]<3))
 
-#### 2. Independent genotype extraction and hand-worked estimator checks ####
+# 2. Validate genotype counts and estimators ----
 check_vcf <- function(path,g,snp,can_flip=FALSE){
-  # Five fixed, spread-out individuals. Read the VCF directly without changing it.
+  # Compare genotypes from five individuals with their VCF records.
   ids <- rownames(g)[round(seq(1,nrow(g),length.out=5))]
   f <- tempfile()
   on.exit(unlink(f))
@@ -115,7 +111,7 @@ stopifnot(toy1$o==.5,toy1$p==.25,
           abs(toy$a/toy$total-1/3)<1e-12,
           abs(choose(6,6)/choose(8,6)-1/28)<1e-12)
 
-#### 3. Population diversity and pairwise WC84 theta ####
+# 3. Calculate population diversity and Weir–Cockerham FST ----
 pg <- function(g,meta,groups,region,info,panel,B=500L) {
   stopifnot(identical(rownames(g),meta$id),ncol(g)==nrow(info))
   units <- sort(unique(groups[!is.na(groups)]))
@@ -192,6 +188,7 @@ pg <- function(g,meta,groups,region,info,panel,B=500L) {
   list(diversity=stat,pairwise=do.call(rbind,tab),matrix=mat,shared=info[shared,],composition=qsum)
 }
 
+# 4. Summarise geographic groups and ancestry sensitivity ----
 regions <- function(meta,grp) sapply(split(meta$region,grp),function(s)paste(sort(unique(s[!is.na(s) & nzchar(s)])),collapse="; "))
 run <- function(g,meta,info,species,panel,out,background) {
   code <- paste0("K",1:4)
@@ -213,7 +210,7 @@ run <- function(g,meta,info,species,panel,out,background) {
   bg <- pg(g[,background],meta,original,region,info[background,],paste(panel,"sensitivity removing named candidate set"),0L)
   bg_comparison <- merge(main$diversity[,c("Population","n_loci","Ho","He","FIS")],
                         bg$diversity[,c("Population","n_loci","Ho","He","FIS")],by="Population",suffixes=c("_full","_background"))
-  # Hold SNPs fixed when testing the effect of removing mixed ancestry from each geographic group.
+  # Use the same SNPs when comparing ancestry-filtered geographic groups.
   methods <- lapply(seq_len(nrow(main$diversity)),function(j) {
     pop <- main$diversity$Population[j]
     both <- which(original==pop); strict <- both[meta$max_Q[both]>=.7]

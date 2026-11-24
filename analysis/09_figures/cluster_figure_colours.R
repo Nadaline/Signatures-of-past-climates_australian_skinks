@@ -1,8 +1,4 @@
-# Consistent genetic-cluster colours across figures
-# Apply the same colour mapping to broad and nested genetic clusters, ensuring that sample assignments and legend meanings remain unchanged.
-# This script adjusts figure presentation only. It does not estimate ancestry coefficients or change the cluster definitions.
-#
-#### Recolour existing plots; never fit models ####
+# 1. Set input and output paths ----
 arg <- commandArgs(TRUE)
 kind <- arg[1]
 stage <- normalizePath(arg[2])
@@ -12,11 +8,13 @@ base <- file.path(local,"results")
 boundary <- file.path(base,"Lampropholis_Fig1_Geographic_context/data/abs_states_generalized.geojson")
 figures <- file.path(stage,"figures",kind)
 dir.create(figures,showWarnings=FALSE)
+# 2. Read the colour palette for genetic clusters ----
 p <- read.csv(file.path(stage,"palette/chapter2_palette.csv"))
 c <- setNames(p$hex,p$key)
 macro <- setNames(unname(c[c("violet","ink","lavender","amber")]),paste0("K",1:4))
 nested <- c(macro[1:2],c[c("K3a","K3b","K3c","K4a","K4b")])
 env <- new.env()
+# 3. Apply the palette to the selected figure ----
 if (kind=="structure") {
   script <- file.path(base,"Fig2_Nuclear_structure_revision/Fig2_Nuclear_structure.R")
   env$commandArgs <- function(...) c(project,boundary,figures)
@@ -29,8 +27,7 @@ if (kind=="structure") {
   script <- file.path(base,"Lampropholis_Fig3_SVDQuartets_geography_v4/Fig3_SVDQuartets_geography_v4.R")
   env$commandArgs <- function(...) c(project,boundary,figures,
     if(kind=="svd_bootstrap") "--bootstrap" else if(kind=="svd_discussion") "--discussion")
-  # The bootstrap edition uses the original Figure 3 reference palette,
-  # including its nested assignments, mixed symbols and K3 link shades.
+# The bootstrap plot uses its own palette for nested and mixed ancestry.
   if (kind=="svd") {
     env$macro <- macro
     env$nested <- nested
@@ -50,6 +47,7 @@ if (kind=="structure") {
   env$fold_col <- unname(c[c("violet","ink","K4a","lavender","amber")])
   env$pal <- colorRampPalette(unname(c[c("violet","paper","amber")]))(257)
 }
+# 4. Draw the figure using the assigned colours ----
 for(expr in parse(script)) {
   lhs <- if(is.call(expr) && identical(expr[[1]],as.name("<-"))) deparse(expr[[2]]) else ""
   if (!lhs %in% c(if(kind=="svd") c("macro","nested","k3_link") else

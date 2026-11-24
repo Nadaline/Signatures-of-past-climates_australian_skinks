@@ -1,8 +1,4 @@
-# Cross-validation: compare predictions for identical held-out pairs
-# Combine replicate predictions with the reference spatial validation table and calculate comparable error summaries. Matched pairs are required because changing which locality pairs are evaluated can obscure the effect of a predictor.
-# Keep locality identities and pair identifiers unchanged when joining tables; only successful replicate predictions contribute to the summary.
-#
-#### Pair-matched metrics from successful independent locality assignments ####
+# 1. Read predictions from random and spatial folds ----
 args <- commandArgs(TRUE); out <- args[1]
 dir <- file.path(out,"tables")
 r <- do.call(rbind,lapply(sort(list.files(file.path(out,"checkpoints"),"^prediction_..\\.csv$",full.names=TRUE)),
@@ -11,12 +7,14 @@ s <- read.csv(file.path(dir,"spatial_cv_test_pair_predictions.csv"),colClasses=c
 a <- read.csv(file.path(dir,"random_fold_assignments.csv"))
 done <- sort(unique(r$repetition))
 stopifnot(length(done)>=5,!anyDuplicated(r[,c("repetition","pair_id")]),!anyDuplicated(s$pair_id))
+# 2. Match observations by pair and sampling region ----
 stable <- c("id1","id2","locality1","locality2","region1","region2")
 mid <- match(r$pair_id,s$pair_id); within <- r$region1==r$region2
 stopifnot(all(!is.na(mid[within])),all(is.na(mid[!within])),
           all(r[within,stable]==s[mid[within],stable]),
           max(abs(r$observed[within]-s$observed[mid[within]]))<1e-12)
 for(n in c("m2","m3")) r[[paste0(n,"_spatial")]] <- s[[n]][mid]
+# 3. Calculate prediction error and geographic distances ----
 rmse <- function(p,y) sqrt(mean((p-y)^2))
 calc <- function(x,sp=FALSE) {
   n <- if(sp) c("m2_spatial","m3_spatial") else c("m2","m3")
@@ -88,6 +86,7 @@ write_csv(national,"national_cv_metrics.csv")
 write_csv(regional,"regional_matched_cv_metrics.csv")
 write_csv(do.call(rbind,diagnostics),"random_cv_fold_diagnostics.csv")
 write_csv(do.call(rbind,distances),"test_train_geographic_distances.csv")
+# 4. Summarise errors and model gains across replicates ----
 summary <- function(x) {
   a <- x[is.finite(x)]
   if(!length(a)) return(rep(NA_real_,5))

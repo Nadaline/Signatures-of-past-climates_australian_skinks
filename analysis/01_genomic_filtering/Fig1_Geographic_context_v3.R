@@ -1,8 +1,4 @@
-# Figure 1: sampling localities and geographic context
-# Draw the sampling map using existing collection coordinates, terrain information and vegetation classes. The figure provides the geographic setting for interpreting population structure; it does not infer genetic relationships.
-# The input arguments identify sampling records, an earlier geographic data source, the output location and an optional plotting setting. Confirm coordinate reference systems and geographic names before generating the map.
-#
-#### 1. Sampling localities, geographic boundaries and vegetation ####
+# 1. Load sampling records, boundaries and vegetation data ----
 library(sf)
 library(terra)
 library(jsonlite)
@@ -16,6 +12,7 @@ v2_preview <- file.path(v2, "Fig1_Geographic_context_v2_preview_2_ilustração.p
 if (!file.exists(v2_preview)) v2_preview <- file.path(v2, "Fig1_Geographic_context_v2_preview_2.png")
 if (length(args) == 5L) v2_preview <- normalizePath(args[5], mustWork = TRUE)
 data_dir <- file.path(v2, "data")
+# Read individual identifiers and geographic coordinates.
 sample <- read.csv(sample_file)[, c("id", "lon", "lat")]
 stopifnot(nrow(sample) == 170L, !anyDuplicated(sample$id),
   all(is.finite(sample$lon)), all(is.finite(sample$lat)))
@@ -25,6 +22,7 @@ stopifnot(nrow(loc) == 101L, sum(loc$n) == 170L, max(loc$n) == 6L)
 loc$size <- cut(loc$n, c(0, 1, 3, 6), labels = c("1", "2–3", "4–6"))
 point_size <- c(.72, .94, 1.14)
 crs_map <- 9473
+# Project sampling coordinates into the map coordinate system.
 xy <- function(lon, lat) unname(st_coordinates(st_transform(
   st_as_sf(data.frame(lon, lat), coords = c("lon", "lat"), crs = 4326), crs_map)))
 point_xy <- xy(loc$lon, loc$lat)
@@ -44,6 +42,7 @@ loc$panel_B <- contains(panel$B)
 stopifnot(all(loc$panel_A | loc$panel_B), any(loc$panel_A & loc$panel_B))
 write.csv(loc, file.path(out, "Fig1_panel_sampling_audit.csv"), row.names = FALSE)
 
+# Group NVIS vegetation classes by vegetation type.
 nvmeta <- fromJSON(file.path(data_dir, "nvis_ext_mvs_metadata.json"), simplifyVector = FALSE)
 stopifnot(identical(nvmeta$metadata[[which(names(nvmeta$metadata) == "")]]$RASTER_DATASET,
   "NVIS7_0_AUST_EXT_MVS_ALB"))
@@ -61,7 +60,7 @@ stopifnot(all(grepl("rainforest", classes$official_name[classes$code %in% catego
   grepl("wet sclerophyll", classes$official_name[classes$code == 3L], fixed = TRUE))
 write.csv(classes, file.path(out, "Fig1_NVIS_MVS_classes.csv"), row.names = FALSE)
 
-#### 2. Existing terrain and NVIS layers; update display colours only ####
+# 2. Prepare elevation and vegetation layers ----
 structure_col <- "#251462"
 ocean <- "#F1F6F8"
 height_colour <- c("#F4EFE4", "#E1E3D7", "#B7C2B6")
@@ -120,7 +119,7 @@ make_background <- function(x) {
   as.raster(matrix(all, nrow = nrow(x$grid), byrow = TRUE))
 }
 
-#### 3. Draw real geographic features, with short leaders and matching panel overlap ####
+# 3. Draw geographic features and sampling localities ----
 gaps <- rbind(Burdekin = c(147.32, -19.77), StLawrence = c(149.75, -22.34),
   Hunter = c(151.03, -32.56))
 uplands <- xy(c(149.06, 150.95, 150.07), c(-23.73, -24.42, -31.75))
@@ -129,7 +128,7 @@ colnames(uplands) <- c("x", "y")
 qpos <- xy(152.35, -28.22)
 eastg <- xy(148.3, -37.51)
 highlands <- xy(148.7, -35.55)
-# Text anchor near Mildura inside the geological basin, not a boundary or sampling point.
+# Place the basin label near Mildura.
 murray <- xy(142.16, -34.18)
 
 label <- function(x, y, txt, col = ink, cex = .82, adj = .5, font = 1, srt = 0) {
@@ -209,11 +208,11 @@ draw_panel <- function(k) {
   u
 }
 
+# Assemble the map panels and inset.
 draw_figure <- function() {
   par(family = "sans", oma = rep(0, 4))
   a <- draw_panel("A")
   b <- draw_panel("B")
-  # Titles and keys in the margins; the Australia inset does not cover either map.
   par(fig = c(0, 1, .93, 1), new = TRUE, mar = rep(0, 4))
   plot.new(); plot.window(c(0, 1), c(0, 1), xaxs = "i", yaxs = "i")
   text(.014, .46, "A  Northern eastern Australia", adj = 0, col = structure_col, cex = 1.01, font = 2)
@@ -258,7 +257,7 @@ draw_figure <- function() {
   text(.880, ys[1:3], c("<250", "250–649", "≥650"), adj = 0, cex = .78, col = ink)
 }
 
-#### 4. Final 450 × 350 pt exports and editorial comparison ####
+# 4. Export the sampling map ----
 stem <- file.path(out, "Fig1_Geographic_context_v3")
 proof <- paste0(stem, "_print_preview.png")
 png(proof, width = 450/72, height = 350/72, units = "in",
@@ -277,7 +276,7 @@ for (i in seq_along(comparison)) {
   preview <- rast(comparison[i])
   pix <- values(preview, mat = TRUE)[, 1:3, drop = FALSE] / 255
   image <- matrix(rgb(pix[, 1], pix[, 2], pix[, 3]), nrow = nrow(preview), byrow = TRUE)
-  # An unreferenced PNG is read by terra with the image rows bottom-up.
+# terra stores unreferenced PNG rows in reverse display order.
   image <- as.raster(image[nrow(image):1, , drop = FALSE])
   rasterImage(image, (i-1)/2, 0, i/2, 350/365, interpolate = FALSE)
 }

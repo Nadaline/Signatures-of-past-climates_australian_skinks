@@ -1,8 +1,4 @@
-# Figure 4: contemporary landscape effects in generalized dissimilarity models
-# Summarize the fitted geographic, climatic and topographic-resistance effects and the corresponding spatial validation tests. This script draws figures from stored model summaries rather than estimating GDM parameters.
-# Read the I-spline plots together with the spatially withheld prediction errors and conditional permutation results. Predictive improvement and statistical support under a spatial null are distinct quantities.
-#
-#### 1. Contemporary model fits, spatial folds and conditional tests ####
+# 1. Load GDM models and spatial validation results ----
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 2L || (length(args) == 3L && args[3] == "--figure-only"))
 project <- normalizePath(args[1], mustWork = TRUE)
@@ -33,7 +29,7 @@ stopifnot(max(abs(observed-tests$observed_mean_rmse_gain)) < 1e-13,
   identical(unname(p),tests$p_value), identical(unname(p),c(.141,.019)),
   all(tests$nperm==999))
 
-#### 2. Comparison table; retain missing validation metrics ####
+# 2. Summarise model comparisons ----
 idx <- match(c("G","C","R","CG","GR","CR","CGR"),subsets$model)
 stopifnot(!anyNA(idx), !anyDuplicated(idx))
 tab <- data.frame(Model = c("G","C","R","G + C","G + R","C + R","G + C + R"),
@@ -57,7 +53,7 @@ pandoc <- Sys.which("pandoc")
 stopifnot(nzchar(pandoc), system2(pandoc,c("-f","markdown","-t","docx",shQuote(word_src),"-o",shQuote(word))) == 0L)
 }
 
-#### 3. Five saved I-splines and two conditional permutation panels ####
+# 3. Plot I-splines and conditional permutation tests ----
 ink <- "#251462"
 electric_violet <- "#6811DB"
 amber <- "#EBB201"
@@ -67,6 +63,7 @@ units_x <- c("Decimal degrees","Circuitscape resistance","BIO12 (mm yr⁻¹)","B
 vars <- c("Geographic","topographicResistance","precAnn","tempRange","tempSeason")
 stopifnot(all(paste0("x_",vars) %in% names(splines)),all(paste0("y_",vars) %in% names(splines)))
 yt <- c(0,.1,.2,.3,.4)
+# Draw predictor responses and observed versus permuted model gains.
 draw <- function() {
   par(mar=rep(0,4),family="sans",xaxs="i",yaxs="i")
   plot.new(); plot.window(c(0,450),c(0,450))
@@ -87,7 +84,7 @@ draw <- function() {
       col=amber,lwd=1.48,cex.lab=.87)
     tick <- pretty(range(xx),3)
     tick <- tick[tick>=min(xx) & tick<=max(xx)]
-    # The local BIO4 input is in hundredths of °C; leave the spline and tick positions unchanged.
+    # BIO4 is stored in hundredths of a degree Celsius.
     tick_label <- if (vars[j] == "tempSeason") tick/100 else tick
     axis(1,at=tick,labels=format(tick_label,scientific=FALSE,trim=TRUE),cex.axis=.84,lwd=.59)
     axis(2,at=yt,labels=formatC(yt,digits=1,format="f"),cex.axis=.83,lwd=.59)

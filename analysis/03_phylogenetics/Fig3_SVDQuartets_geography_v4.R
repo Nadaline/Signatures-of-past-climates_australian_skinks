@@ -1,8 +1,4 @@
-# Figure 3: nuclear relationships and sampling geography
-# Align the unrooted SVDQuartets tree with the map of sampling localities and independently estimated ancestry coefficients. Rearranging the display of tree branches does not change topology or bootstrap support.
-# Branch support indicates uncertainty in inferred relationships, not divergence times. Interpret map connectors as graphical aids rather than migration paths.
-#
-#### 1. Nuclear SVDQuartets tree, sampling and nested ancestry ####
+# 1. Load the nuclear tree and ancestry estimates ----
 library(ape)
 library(sf)
 args <- commandArgs(TRUE)
@@ -17,6 +13,7 @@ tr <- read.tree(tree_file)
 n <- length(tr$tip.label)
 stopifnot(inherits(tr, "phylo"), n == 170L, !anyDuplicated(tr$tip.label),
   length(tr$edge.length) == nrow(tr$edge), all(tr$edge.length >= 0 & tr$edge.length <= 100))
+# Match sample identifiers across the tree and ancestry tables.
 read_ids <- function(path) read.csv(file.path(project, path), colClasses = c(id = "character"))
 meta <- read_ids("population_structure/pcoa_scores.csv")
 hier <- read_ids("results/structure/hierarchical_snmf/hierarchical_snmf_assignments.csv")
@@ -56,7 +53,7 @@ link_fill[k3] <- unname(k3_link[meta$display_group[k3]])
 link_fill[paired] <- "#7E758B"
 stopifnot(!anyNA(meta$fill_left), !anyNA(meta$fill_right))
 
-#### 2. East-coast map from the existing basemap and exact coordinates ####
+# 2. Prepare the eastern Australian sampling map ----
 crs_map <- 3577
 pts <- st_transform(st_as_sf(meta, coords = c("lon", "lat"), crs = 4326, remove = FALSE), crs_map)
 xy <- st_coordinates(pts)
@@ -80,7 +77,7 @@ north_k3 <- north_k3[which.max(meta$lat[north_k3])]
 stopifnot(length(north_k3) == 1L, meta$id[north_k3] == "411871",
   length(sites[[site[north_k3]]]) == 1L)
 
-#### 3. Rotate child blocks to minimize crossings without changing the tree ####
+# 3. Arrange tree tips by geographic position ----
 root <- setdiff(tr$edge[, 1], tr$edge[, 2])
 stopifnot(length(root) == 1L)
 children <- split(tr$edge[, 2], tr$edge[, 1])
@@ -108,11 +105,11 @@ for (node in internal) {
   kid <- children[[k]]
   m <- length(kid)
   stopifnot(m >= 2L, m <= 12L)
-  # Between-child crossing cost depends on their order, not internal rotations.
+  # Count crossings between child clades.
   cost <- matrix(0, m, m)
   for (i in seq_len(m)) for (j in setdiff(seq_len(m), i))
     cost[i, j] <- sum(outer(target[desc[[kid[i]]]], target[desc[[kid[j]]]], ">"))
-  # Subset dynamic programming: append the final child to the best preceding subset.
+  # Find the child order with the fewest crossings.
   bits <- bitwShiftL(1L, seq_len(m) - 1L)
   best <- c(0, rep(Inf, 2^m - 1))
   orders <- vector("list", 2^m)
@@ -132,7 +129,7 @@ for (node in internal) {
 tip_order <- walk(root, opt)
 stopifnot(setequal(tip_order, seq_len(n)), cross(tip_order) <= min(cross(original), cross(ladder_order)))
 rotation_count <- sum(!vapply(names(children), function(k) identical(children[[k]], opt[[k]]), logical(1)))
-# Reorder existing edge rows with their support values; do not reroot or edit a branch.
+# Rotate child clades while retaining their branch support.
 edge_key <- paste(tr$edge[, 1], tr$edge[, 2])
 edge_walk <- function(node) {
   kid <- opt[[as.character(node)]]
@@ -157,7 +154,7 @@ metrics <- data.frame(orientation = c("Source Newick", "Source Newick flipped",
     function(o) median(match(tas, o)), numeric(1)))
 write.csv(metrics, file.path(out, "Fig3_orientation_audit.csv"), row.names = FALSE)
 
-#### 4. Tree and map on one vector canvas ####
+# 4. Draw the tree alongside the map ----
 page <- if (discussion_view) c(660,495) else c(450, if (bootstrap_view) 622 else 495)
 if (bootstrap_view) {
   sc_source <- file.path(project,"results/demography/moments/tables/stage8b_final_model_maxima.csv")
@@ -182,7 +179,7 @@ map_x <- tx(xy[, 1]); map_y <- ty(xy[, 2])
 stopifnot(all(map_x > box_x[1]), all(map_x < box_x[2]))
 tip_x <- 214
 entry_x <- box_x[1]
-# Topological height only: every actual terminal edge reaches the same X.
+# Place the terminal tips at the same horizontal position in the cladogram.
 height <- integer(nt)
 for (node in internal) height[node] <- 1L + max(height[opt[[as.character(node)]]])
 node_x <- 12 + (tip_x - 12) * depth / (depth + height)
@@ -231,7 +228,6 @@ if (bootstrap_view) {
   label_right <- node_x[child[support_labels]] < 29
   label_x <- node_x[child[support_labels]] + ifelse(label_right, 4, -3)
   label_y <- node_y[child[support_labels]] + 4
-  # Stagger nearby labels across the incoming split; never move the dot or branch.
   for (i in seq_along(support_labels)) {
     previous <- seq_len(i - 1L)
     collision <- abs(label_x[i] - label_x[previous]) < 23 &
@@ -269,7 +265,7 @@ if (bootstrap_view) {
     file.path(out, "Fig3_bootstrap_internal_splits.csv"), row.names = FALSE)
 }
 
-# Plotting regions are adjusted only by a common linear scale on both map axes.
+# Use the same projection scale on both map axes.
 map_on_page <- function(g) {
   st_crs(g) <- NA
   g * sc + c(mean(box_x) - mean(box[c("xmin", "xmax")]) * sc,
@@ -365,6 +361,7 @@ draw_discussion_profiles <- function() {
     "Time progresses to the right within each fit only.",
     "No model times are assigned to cladogram branches."),adj=0,col=ink,cex=.77)
 }
+# 5. Assemble the tree, sampling map and ancestry symbols ----
 draw <- function() {
   par(mar = rep(0, 4), xaxs = "i", yaxs = "i", family = "sans", lend = "round")
   plot.new()
@@ -387,9 +384,7 @@ draw <- function() {
   text(lab_x[keep], lab_y[keep], c("QLD", "NSW", "VIC", "SA", "Tasmania")[keep],
     col = "#625A75", cex = .76)
   t <- seq(0, 1, length.out = 35)
-  # The curves all use the same monotone X parameter up to the map entry;
-  # afterwards each one is level. Crossing counts in section 3 are exact
-  # pairwise intersections for distinct map latitudes, excluding shared endpoints.
+  # Connect tree tips to sampling localities using monotone curves.
   bx <- (1-t)^3 * tip_x + 3*(1-t)^2*t*(tip_x+9) +
     3*(1-t)*t^2*(entry_x-9) + t^3 * entry_x
   w <- t^2 * (3 - 2*t)
@@ -405,8 +400,6 @@ draw <- function() {
   segments(node_x[parent], node_y[child], node_x[child], node_y[child],
     col = ifelse(child <= n, adjustcolor(ink, alpha.f = .76), ink),
     lwd = ifelse(child <= n, .42, .53))
-  # The tip marks sit just beyond the purple branch ends, so the ancestry
-  # colours read independently. Their diameter stays below the tip spacing.
   sample_x <- tip_x + if (bootstrap_view) 1.15 else 0
   symbols(rep(sample_x, sum(!paired)), node_y[which(!paired)],
     circles = rep(if (bootstrap_view) 1.15 else 1.12, sum(!paired)),
@@ -474,6 +467,7 @@ draw <- function() {
   text(pair_x + 6, 14, pair_groups, adj = 0, col = ink, cex = .94)
   if (discussion_view) draw_discussion_profiles() else if (bootstrap_view) draw_size_profiles()
 }
+# 6. Export the tree figure ----
 stem <- file.path(out, if (discussion_view) "Fig3_SVDQuartets_demography_discussion" else
   if (bootstrap_view) "Fig3_SVDQuartets_geography_bootstrap" else "Fig3_SVDQuartets_geography_v4")
 cairo_pdf(paste0(stem, ".pdf"), width = page[1]/72, height = page[2]/72, pointsize = 8.5, bg = "white")

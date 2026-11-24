@@ -1,8 +1,4 @@
-# Figure 6: population relationships and admixture in TreeMix
-# Visualize genetic relationships among the 14 geographic groups, with migration edges estimated from allele-frequency covariance. Edges indicate fitted covariance patterns, not observed movements or independently dated migration episodes.
-# Preserve the original edge weights and geographic-group definitions; distinguish the plotted graph from evidence for exactly four historical migration events.
-#
-#### 1. TreeMix relationships among sampling regions ####
+# 1. Load TreeMix graphs and likelihoods ----
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 4L)
 project <- normalizePath(args[1], mustWork = TRUE)
@@ -27,7 +23,7 @@ w <- edges$V4[mig]
 stopifnot(nrow(tip) == 14L, length(root) == 1L, length(mig) == 4L, !anyDuplicated(tip$V2),
   identical(w, as.numeric(sub(" .*", "", newick[-1]))))
 
-#### 2. Geographic group definitions and range-wide K = 4 ancestry ####
+# 2. Match geographic groups to ancestry estimates ----
 lab <- c(colossus = "Bunya Mountains", deli1b = "Sarina–Eungella", deli1c = "Rockhampton–Boyne Island",
   deli2 = "Kroombit Tops", deli4a = "Northern NSW ranges", deli4b = "Tweed–Nightcap",
   deli4c = "New England uplands", deli5b = "NSW mid-north ranges", deli7a = "ACT–Southern Tablelands",
@@ -78,9 +74,8 @@ crosswalk <- data.frame(population = meta$pop, geographic_label = unname(lab[met
 write.csv(crosswalk[order(crosswalk$population,crosswalk$sample_id),],
   file.path(out,"TreeMix_population_label_crosswalk.csv"), row.names=FALSE, na="")
 
-#### 3. Original graph coordinates, unchanged drift scale and directed edges ####
-# The previously saved TreeMix renderer applies the edge-weight factor twice to its
-# display coordinates. Reproduce that convention; previously saved edge data stay intact.
+# 3. Prepare the population graph and migration edges ----
+# Use the TreeMix plotting convention for the display coordinates of migration edges.
 e_plot <- edges
 e_plot$V3 <- edges$V3 * edges$V4 * edges$V4
 vert$x <- vert$y <- vert$ymin <- vert$ymax <- NA_real_
@@ -99,7 +94,7 @@ print(data.frame(from=edges$V1[mig],to=edges$V2[mig],weight=w,
   xfrom=vert$x[from[mig]],xto=vert$x[to[mig]],yfrom=vert$y[from[mig]],yto=vert$y[to[mig]]),
   digits=10,row.names=FALSE)
 
-#### 4. Vector TreeMix plate ####
+# 4. Draw model fit and population relationships ----
 draw <- function() {
   par(family="sans",fg=ink,col.axis=ink,col.lab=ink,col.main=ink,las=1,tcl=-.24,mgp=c(1.52,.43,0))
   par(fig=c(0,1,.742,1),mar=c(3.12,5.0,2.75,2.35))
@@ -124,7 +119,6 @@ draw <- function() {
   a <- which(edges$V5=="NOT_MIG")
   segments(vert$x[from[a]],vert$y[from[a]],vert$x[to[a]],vert$y[to[a]],col=ink,lwd=.97)
   t <- seq(0,1,length.out=65)
-  # Ease the arcs away from one another without changing either endpoint.
   bend <- c(-.0060,-.0006,.0039,.0049)
   for (j in seq_along(mig)) {
     a <- from[mig[j]]; b <- to[mig[j]]

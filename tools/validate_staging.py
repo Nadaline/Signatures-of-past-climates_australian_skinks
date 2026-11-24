@@ -1,19 +1,22 @@
-"""Check published documentation, links and figures. Verify local repository documentation and selected files for internal consistency and missing references. This utility checks the presentation of research materials rather than running statistical models. Warnings should be reviewed against the original methods and outputs; passing a repository check is not a substitute for scientific reproducibility."""
+"""Check repository files, numerical summaries and guide layouts."""
 import csv,hashlib,re,subprocess
 from pathlib import Path
 import xml.etree.ElementTree as ET
+# 1. Check documentation links
 base=Path(__file__).resolve().parents[1]
 docs=list(base.rglob('*.md'))
 for f in docs:
     for target in re.findall(r'\]\(([^)]+)\)',f.read_text()):
         dest=target.split('#',1)[0]
         assert not dest or dest.startswith('https://') or (f.parent/dest).exists(),(f,dest)
+# 2. Verify the provenance table against the files
 with (base/'docs/artifact_provenance.tsv').open() as f:
     rows=list(csv.DictReader(f,delimiter='\t'))
 for row in rows:
     f=base/row['path']
     with f.open('rb') as b: assert hashlib.file_digest(b,'sha256').hexdigest()==row['staged_sha256'],f
     assert f.stat().st_size==int(row['bytes'])
+# 3. Check file types, sizes and paths
 for f in base.rglob('*'):
     if not f.is_file() or '.git' in f.parts: continue
     assert not f.is_symlink()
@@ -22,9 +25,10 @@ for f in base.rglob('*'):
     if f.suffix in {'.md','.R','.py','.csv','.tsv','.yml','.sh','.paup','.cff'}:
         content=f.read_text()
         if f.parent==base/'tools':
-            # Known earlier server input is quoted solely as a replacement/screening pattern.
+            # Exclude the source path used by the import utility.
             content=content.replace('/'+'projects/rstudio-export/Lampro','')
         assert not re.search(r'/(?:home|media|projects|Users)/[A-Za-z0-9_-]+|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16}|BEGIN [A-Z ]*PRIVATE KEY',content),f
+# 4. Verify the reported numerical summaries
 def table(name):
     with (base/'results/summary_tables'/name).open() as f:
         return list(csv.DictReader(f))
@@ -45,6 +49,7 @@ assert [round(float(z['delta_AIC_IM']),2) for z in t]==[329.18,16.80,6.32] and {
 t=table('population_genetics/TableS_Lampropholis_population_genetic_diversity.csv')
 assert len(t)==14 and sum(int(z['n']) for z in t)==163 and {int(z['n_loci']) for z in t}=={5827}
 print(f'{len(docs)} Markdown files checked; {len(rows)} archive hashes and linked files verified; numeric checks passed.')
+# 5. Check the printed guide dimensions and fonts
 for code,folder in [('PT','pt-BR'),('EN','en')]:
     for mode,pad in [('screen',0),('print',3),('print_cropmarks',9)]:
         pdf=base/'design/pocket-guide'/folder/f'Lampropholis_pocket_guide_{code}_{mode}.pdf'

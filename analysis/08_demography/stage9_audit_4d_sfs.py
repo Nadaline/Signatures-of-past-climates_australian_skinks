@@ -1,21 +1,17 @@
-# Four-population frequency spectrum: diagnostic checks
-# Inspect the folded four-dimensional site-frequency spectrum and its compatibility with a simple reference model. The reference spectrum is not itself a fitted historical scenario.
-# The pairwise marginal displays help diagnose the same underlying data and must not be treated as additional independent observations.
-#
-#### Packages ####
+# 1. Import packages
 import os
 import csv
 import itertools
 import numpy as np
 import moments
 
-#### Directories ####
+# 2. Set input and output paths
 project = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sfs_file = os.path.join(project, "results/demography/sfs/stage9_4d/K1_K2_K3_K4_projected_folded_4d.fs")
 out_dir = os.path.join(project, "results/demography/moments/stage9_4d/tables")
 os.makedirs(out_dir, exist_ok=True)
 
-#### Load genomic frequency spectrum ####
+# 3. Load the four-population frequency spectrum
 data = moments.Spectrum.from_file(sfs_file)
 expected_shape = (81, 21, 101, 81)
 if tuple(data.shape) != expected_shape:
@@ -23,10 +19,8 @@ if tuple(data.shape) != expected_shape:
 if not bool(data.folded):
     raise ValueError("The Stage 9 empirical SFS must be folded.")
 
-#### Construct a simple four-population reference spectrum ####
-# This spectrum is only a technical reference for the folded-likelihood check.
-# It represents an instantaneous four-way split with no migration and no
-# elapsed integration time. It is not a fitted biological demographic model.
+# 4. Construct a reference spectrum
+# Reference: a simultaneous four-way split with no migration or elapsed time.
 sample_sizes = list(data.sample_sizes)
 ancestral = moments.Spectrum(moments.LinearSystem_1D.steady_state_1D(sum(sample_sizes)))
 expected = moments.Manips.split_1D_to_2D(ancestral, sample_sizes[0], sum(sample_sizes[1:]))
@@ -36,7 +30,7 @@ expected = expected.fold()
 expected.pop_ids = data.pop_ids
 expected.mask = data.mask.copy()
 
-#### Check compatibility of the folded likelihood ####
+# 5. Compare folded spectra and likelihoods
 dimensions_match = tuple(data.shape) == tuple(expected.shape)
 pop_ids_match = list(data.pop_ids) == list(expected.pop_ids)
 model_folded = bool(expected.folded)
@@ -67,10 +61,8 @@ with open(os.path.join(out_dir, "stage9_4d_sfs_qc.csv"), "w", newline="") as han
     writer.writerow(["negative_cells", int(np.sum(np.asarray(data) < 0))])
     writer.writerow(["moments_version", moments.__version__])
 
-#### Save diagnostic two-dimensional marginals ####
-# These are visual summaries of the same four-dimensional SFS, not replacement
-# pairwise inputs. Saving them separately avoids loading the dense 4D object in
-# the figure script.
+# 6. Export two-dimensional marginal spectra
+# Sum over the remaining dimensions to obtain each pairwise marginal.
 array = np.ma.filled(np.asarray(data), 0)
 with open(os.path.join(out_dir, "stage9_4d_pairwise_marginals.csv"), "w", newline="") as handle:
     writer = csv.writer(handle)

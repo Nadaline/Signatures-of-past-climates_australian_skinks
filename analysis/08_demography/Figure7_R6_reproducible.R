@@ -1,8 +1,4 @@
-# Figure 7: demographic-model comparison and frequency-spectrum residuals
-# Reconstruct the comparison of strict isolation, continuous migration, ancient migration and secondary contact from previously estimated folded site-frequency spectra and model fits.
-# The fitted spectra and AIC rankings are inputs to plotting; this script does not optimize demographic parameters. Residual plots locate model mismatches rather than testing each frequency bin.
-#
-#### Read fitted spectra and model summaries without refitting
+# 1. Read fitted demographic models and spectra ----
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 3)
 package <- args[1]; project <- args[2]; out <- args[3]
@@ -54,7 +50,7 @@ for (p in pair) {
 }
 write.csv(audit,file.path(write_to,"Figure7_R6_SFS_lineage.csv"),row.names=FALSE)
 
-#### Geographic order and matching membership
+# 2. Match geographic groups to diversity and ancestry estimates ----
 div <- read.csv(file.path(tab,"diversity/population_diversity.csv"))
 fst <- read.csv(file.path(tab,"diversity/pairwise_fst.csv"),row.names=1)
 q <- read.csv(file.path(tab,"treemix/TreeMix_population_Q_summary.csv"))
@@ -70,7 +66,7 @@ stopifnot(nrow(geo)==14,nrow(q)==14,sum(q$n)==163,
           sum(is.finite(fst[lower.tri(fst)]))==91,isSymmetric(fst,check.attributes=FALSE),
           all(abs(rowSums(q[names(K)])-1)<0.001))
 
-#### Export the exact cells, populations and model rows behind both figures
+# 3. Assemble model summaries and spectrum values ----
 src <- list()
 src[[1]] <- data.frame(kind="A_model",id=mod$pair,id2=mod$model,index1=NA,index2=NA,
                        value=mod$delta_AIC,observed=NA,expected=NA,masked=NA)
@@ -88,7 +84,7 @@ for(k in names(K)) src[[length(src)+1L]] <- data.frame(kind="B_mean_Q",id=geo$po
 write.csv(do.call(rbind,src),file.path(write_to,"Figure7_R6_source_data.csv"),row.names=FALSE,na="")
 write.csv(cbind(geo,q[setdiff(names(q),"population")]),file.path(write_to,"Figure7_R6_population_order.csv"),row.names=FALSE)
 
-#### Figure A: ranking and signed residuals answer different questions
+# 4. Draw AIC comparisons and SFS residuals ----
 lim <- max(unlist(lapply(arrays,function(a) abs(a$res[!a$mask]))))
 res_cols <- colorRampPalette(c(idv[["violet"]],idv[["paper"]],idv[["amber"]]))(257)
 stretch <- function(x) asinh(x / .25)
@@ -135,7 +131,7 @@ draw_A <- function() {
   mtext("Observed − expected SFS mass [asinh spacing]",1,line=.35,cex=.72)
 }
 
-#### Figure B: geography sets the order, Q is a separate annotation
+# 5. Draw geographic diversity and ancestry panels ----
 draw_B <- function() {
   par(cex=.83,fg=ink,col.axis=ink,col.lab=ink,mar=c(6.3,12.8,1.6,1.1),mgp=c(1.8,.43,0),tcl=-.18)
   plot.new(); plot.window(c(-.55,17.7),c(14.05,-.55),xaxs="i",yaxs="i")
@@ -170,6 +166,7 @@ draw_B <- function() {
   text(4.5,16.22,"Pairwise nuclear differentiation (FST)",cex=.94,xpd=NA)
 }
 
+# 6. Export the figures ----
 save <- function(tag,draw,height) {
   f <- file.path(fig_to,paste0("Figure7_candidate_",tag,"_R6"))
   cairo_pdf(paste0(f,".pdf"),width=174/25.4,height=height/25.4,family="sans",pointsize=10)

@@ -1,17 +1,13 @@
 #!/usr/bin/env Rscript
-# Main and supplementary figures for the Lampropholis study
-# Assemble geographic, nuclear-structure, landscape, TreeMix and demographic panels from the relevant analysis outputs. Keep the scientific meanings of scales, group labels and model summaries consistent across figures.
-# Use saved results for figure construction and refer to the analysis scripts for the fitting procedures. Genetic clusters, geographic groups and mitochondrial clades are different classifications.
-#
 
-#### Packages ####
+# 1. Load packages ----
 
 suppressPackageStartupMessages({
   library(ggplot2); library(dplyr); library(tidyr); library(patchwork)
   library(cowplot); library(png); library(maps); library(ape); library(ggtree)
 })
 
-#### Directories ####
+# 2. Define the project and figure directories ----
 
 args <- commandArgs(trailingOnly = TRUE)
 project <- normalizePath(if (length(args)) args[1] else ".", mustWork = TRUE)
@@ -19,7 +15,7 @@ out <- file.path(project, "figures", "manuscript")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 figure_suffix <- "_v2"
 
-#### Manuscript theme and project colours ####
+# 3. Define the figure theme and colours ----
 
 palette <- read.csv(file.path(project, "project_palette.csv"), stringsAsFactors = FALSE)
 ancestry_colours <- setNames(palette$color[match(paste0("K", 1:4), palette$unit)], paste0("K", 1:4))
@@ -49,11 +45,10 @@ as_plot_image <- function(path) {
 }
 australia <- map_data("world", region = c("Australia", "Tasmania"))
 
-#### Read previously estimated genetic and landscape results ####
+# 4. Load genetic and landscape estimates ----
 
 pca <- read.csv(file.path(project, "population_structure", "pcoa_scores.csv"), stringsAsFactors = FALSE)
-# The previously saved object was generated with dartR::gl.pcoa. Its eigenvalues, rather
-# than the plotted coordinates, define the reported PCoA variation percentages.
+# Calculate the percentage of PCoA variation from the eigenvalues.
 pcoa_archived <- readRDS(file.path(project, "..", "Reference", "pcoa.ref7.rds"))
 pcoa_positive_eigenvalues <- pcoa_archived$eig[pcoa_archived$eig > 0]
 pcoa_variance <- 100 * pcoa_positive_eigenvalues / sum(pcoa_positive_eigenvalues)
@@ -88,15 +83,14 @@ climate_stability <- read.csv(file.path(project, "results", "landscape", "gdm_de
 leave_one_fold <- read.csv(file.path(project, "results", "landscape", "paleoclimate", "null_corrected", "corrected_leave_one_fold_out.csv"))
 convergence <- read.csv(file.path(project, "results", "demography", "moments", "tables", "stage8b_final_convergence.csv"))
 
-#### Figure 1 - Broad ancestry turnover ####
+# 5. Broad-scale ancestry ----
 
 p1a <- ggplot(pca, aes(PCo1, PCo2, colour = global_component)) +
   geom_point(size = 2.1, alpha = .9) + scale_colour_manual(values = ancestry_colours, drop = FALSE) + theme_lampro +
   labs(title = "Nuclear PCoA", x = sprintf("PCoA axis 1 (%.1f%%)", pcoa_variance[1]),
        y = sprintf("PCoA axis 2 (%.1f%%)", pcoa_variance[2]), colour = "Dominant global ancestry component")
 
-# Alpha blends a low-Q assignment into the beige land background. Thus point
-# opacity, not point size, represents the strength of each ancestry coefficient.
+# Point opacity represents the strength of the ancestry coefficient.
 q4_map <- left_join(q4, fold_sites[, c("id", "X", "Y")], by = "id") %>%
   group_by(X, Y) %>% summarise(K1 = mean(K1), K2 = mean(K2), K3 = mean(K3), K4 = mean(K4), .groups = "drop") %>%
   pivot_longer(cols = K1:K4, names_to = "component", values_to = "ancestry")
@@ -109,7 +103,7 @@ p1b <- ggplot() +
 figure1 <- (p1a | p1b) + plot_annotation(tag_levels = "A")
 save_figure(figure1, "Figure1_population_structure", 11.5, 4.8)
 
-#### Figure 2 - Contemporary landscape turnover ####
+# 6. Contemporary landscape models ----
 
 gcr$model <- factor(gcr$model, levels = c("G", "C", "R", "CG", "GR", "CR", "CGR"), labels = c("G", "C", "R", "G + C", "G + R", "C + R", "G + C + R"))
 p2a <- ggplot(gcr, aes(model, deviance_explained, fill = model)) + geom_col(show.legend = FALSE) +
@@ -139,7 +133,7 @@ p2d <- ggplot(ispline_long, aes(x, y)) + geom_line(colour = "#2F4858", linewidth
 figure2 <- (p2a | p2b) / (p2c | p2d) + plot_annotation(tag_levels = "A")
 save_figure(figure2, "Figure2_contemporary_GDM", 12, 9)
 
-#### Figure 3 - Historical landscape signal ####
+# 7. Historical landscape models ----
 
 historical_summary <- historical_cv %>% filter(model %in% c("M2", "M3_PaleoMean")) %>% group_by(model) %>% summarise(mean_rmse = mean(rmse), .groups = "drop")
 historical_summary$model <- factor(historical_summary$model, levels = c("M2", "M3_PaleoMean"), labels = c("M2: present landscape", "M3: + PaleoMean"))
@@ -164,7 +158,7 @@ figure3 <- (p3a | p3b) / (p3c | p3d) / p3e + plot_annotation(tag_levels = "A")
 save_figure(figure3, "Figure3_historical_landscape", 12, 12)
 save_figure(p3s, "Supplementary_Figure_historical_Tasmania_sensitivity", 7, 4.5)
 
-#### Figure 4 - Reticulate history ####
+# 8. TreeMix population graph ----
 
 p4a <- ggplot(treemix_runs, aes(factor(m), loglik)) + geom_point(alpha = .18, colour = "#2F4858", position = position_jitter(width = .12, height = 0)) +
   stat_summary(aes(group = 1), fun = mean, geom = "line", colour = "#2F4858", linewidth = .8) + stat_summary(fun = mean, geom = "point", colour = "#2F4858", size = 2.2) +
@@ -174,7 +168,7 @@ p4b <- as_plot_image(file.path(project, "population_structure", "05_treemix_best
 figure4 <- (p4a | p4b) + plot_annotation(tag_levels = "A")
 save_figure(figure4, "Figure4_treemix", 12, 5)
 
-#### Figure 5 - Demographic model comparison ####
+# 9. Demographic model comparison ----
 
 stage8b$model <- factor(stage8b$model, levels = c("SI", "IM", "AM", "SC"))
 p5a <- ggplot(stage8b, aes(model, delta_AIC, fill = model)) + geom_col(show.legend = FALSE) + facet_wrap(~pair, scales = "free_y") +
@@ -203,7 +197,7 @@ sfs_panels <- lapply(c("K1_K3", "K1_K4", "K2_K4"), function(pair) {
 figure5 <- p5a / wrap_plots(sfs_panels, ncol = 1) + plot_annotation(title = "Stage 8B folded-SFS model fit (SC shown; Stage 8C robustness pending)", tag_levels = "A")
 save_figure(figure5, "Figure5_demographic_model_comparison", 12, 15)
 
-#### Supplementary Figure S1 - Nested sNMF selection ####
+# 10. Nested sNMF model selection ----
 
 hierarchy <- hierarchy %>% rename(global_component = parent, nested_K = child_K, n_individuals = n_parent)
 hierarchy_runs <- hierarchy_runs %>% rename(global_component = parent, nested_K = child_K)
@@ -227,7 +221,7 @@ nested_decisions <- hierarchy %>% transmute(global_component, n_individuals, tes
   selected_nested_K = ifelse(selected_final, nested_K, NA_integer_), decision = ifelse(status == "NO_REPRODUCIBLE_SUBSTRUCTURE", "NO_REPRODUCIBLE_NESTED_STRUCTURE", ifelse(selected_final, "REPRODUCIBLE_NESTED_STRUCTURE", "NOT_SELECTED")))
 write.csv(nested_decisions, file.path(out, "nested_snmf_selection_decisions.csv"), row.names = FALSE)
 
-#### Supplementary Figure S1b - Nested nuclear ancestry ####
+# 11. Nested ancestry ----
 
 hierarchy_plot <- left_join(hierarchy_q, fold_sites[, c("id", "X", "Y")], by = "id")
 hierarchy_plot$order <- ave(hierarchy_plot$Y, hierarchy_plot$global_component, FUN = function(x) rank(x, ties.method = "first"))
@@ -242,12 +236,11 @@ pS1c <- ggplot(hierarchy_long, aes(order, Q, fill = nested_component)) + geom_co
   labs(title = "Nested nuclear structure within global ancestry components", x = "Individuals ordered south to north", y = "Nested Q", fill = "Nested component")
 save_figure(pS1c, "Supplementary_Figure_S1b_nested_snmf_ancestry", 12, 4.8)
 
-#### Supplementary Figure S1c - SVDQuartets, Chapple labels and aligned Q ####
+# 12. SVDQuartets tree and ancestry coefficients ----
 
 svd_tree <- read.tree(file.path(project, "treemix", "svdquartets_ref5", "svdquartets_ref5_170_random_final.tre"))
-# PAUP writes bootstrap percentages in the raw Newick branch-value field. I
-# redraw the final consensus as a cladogram because those values are support,
-# not evolutionary branch lengths or divergence times.
+# PAUP stores bootstrap support in the Newick branch-value field.
+# Draw a cladogram using those values as node support.
 svd_tree$edge.length <- rep(1, nrow(svd_tree$edge))
 chapple_crosswalk <- sample_lineages %>% mutate(
   chapple_clade = ifelse(grepl("^deli[1-9]", chapple_lineage), sub("^deli([1-9]).*$", "deli\\1", chapple_lineage), chapple_lineage),
@@ -256,9 +249,7 @@ chapple_crosswalk <- sample_lineages %>% mutate(
   mutate(provenance = "Project population label; user-confirmed reference to Chapple et al. (2011) Figure 6 MCC tree")
 write.csv(chapple_crosswalk, file.path(out, "chapple_figure6_sample_crosswalk.csv"), row.names = FALSE)
 
-# Every terminal keeps its sample identifier and the project population label
-# that refers to the Chapple Figure 6 MCC tree. The two horizontal Q panels use
-# the tree's y-order, so each bar is directly aligned with its corresponding tip.
+# Match the ancestry bars and mitochondrial group labels to tree tips.
 svd_metadata <- q4 %>% transmute(id = as.character(id), K1, K2, K3, K4) %>%
   left_join(chapple_crosswalk[, c("id", "chapple_lineage", "chapple_clade")], by = "id") %>%
   left_join(hierarchy_q %>% select(id, nested_component, nested_max_Q, K1a, K2a, K3a, K3b, K3c, K4a, K4b), by = "id") %>%
@@ -288,7 +279,7 @@ pS1d <- (pS1d | pS1d_global | pS1d_nested) + plot_layout(widths = c(3.6, 1, 1)) 
   plot_annotation(title = "Final SVDQuartets consensus (100,000 random quartets; 1,000 bootstraps) aligned with Chapple Figure 6 labels and nuclear ancestry")
 save_svd_figure(pS1d, "Supplementary_Figure_S1c_SVDquartets_global_nested_Q", 21, 22)
 
-#### Supplementary diagnostics ####
+# 13. Supplementary model diagnostics ----
 
 ld_summary$distance_bin <- factor(ld_summary$distance_bin, levels = c("0-10 kb", "10-25 kb", "25-50 kb", "50-100 kb", "100-250 kb", ">250 kb"))
 ld_long <- ld_summary %>% filter(!is.na(median_r2)) %>% select(distance_bin, median_r2, q95, prop_r2_gt_0_1) %>% pivot_longer(-distance_bin, names_to = "metric", values_to = "value")
@@ -312,11 +303,9 @@ pS5 <- ggplot(convergence, aes(model, number_within_0.1, fill = model)) + geom_c
   labs(title = "Stage 8B optimization confirmations", subtitle = "Independent optimisation solutions within 0.1 log-likelihood units of the frozen maximum", x = NULL, y = "Number of independent solutions")
 save_figure(pS5, "Supplementary_Figure_S5_moments_convergence", 9, 4.5)
 
-#### Graphical abstract ####
+# 14. Graphical abstract ----
 
-# This uses only empirical spatial coordinates, ancestry coefficients, selected
-# nested assignments and locality-level historical gain. It represents neither
-# inferred refugia nor literal TreeMix migration routes.
+# Combine sampling locations, ancestry and historical model improvement.
 global_map <- ggplot() + geom_polygon(data = australia, aes(long, lat, group = group), fill = "#EAE4D9", colour = "grey65", linewidth = .25) +
   geom_point(data = q4_map, aes(X, Y, fill = component, alpha = ancestry), shape = 21, colour = "#EAE4D9", stroke = .1, size = 2.2) + coord_quickmap(xlim = c(135, 154), ylim = c(-44, -18)) +
   scale_fill_manual(values = ancestry_colours, guide = "none") + scale_alpha(range = c(.08, 1), guide = "none") + theme_void() + ggtitle("BROAD ANCESTRY TURNOVER")
@@ -328,7 +317,7 @@ reticulate_plot <- p4a + theme(legend.position = "none", axis.text = element_tex
 graphical_abstract <- (past_map | global_map | nested_plot | reticulate_plot) + plot_annotation(title = "Historical landscape signal and hierarchical genomic structure in Lampropholis delicata")
 save_figure(graphical_abstract, "Graphical_Abstract", 16, 4.5)
 
-#### Record figure outputs and input checks ####
+# 15. Save figure sources and summaries ----
 
 manifest <- data.frame(
   figure = c("Figure 1", "Figure 2", "Figure 3", "Figure 4", "Figure 5", "Supplementary Figure S1", "Supplementary Figure S1b", "Supplementary Figure S1c", "Supplementary Figure S2", "Supplementary Figure S3", "Supplementary Figure S4", "Supplementary Figure S5", "Graphical abstract"),

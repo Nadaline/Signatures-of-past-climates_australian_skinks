@@ -1,13 +1,9 @@
-# Demographic-model results: compare successful parameter estimates
-# Read the successful moments optimization outputs and organize parameter estimates, likelihoods and model comparisons for the geographic-population contrasts.
-# The results depend on the folded SFS and the specified parameterization. Distinguish numerical optimization stability from independent biological evidence.
-#
-#### Directories ####
+# 1. Set the results directory ----
 
 project_dir <- normalizePath(".")
 table_dir <- file.path(project_dir, "results", "demography", "moments", "tables")
 
-#### Load validated optimization results ####
+# 2. Read optimization results ----
 
 pilot <- read.csv(file.path(table_dir, "stage8_clean_pilot_runs.csv"), stringsAsFactors = FALSE)
 pilot <- pilot[pilot$optimization_status == "success", ]
@@ -32,7 +28,7 @@ stage8b <- stage8b[, c("pair", "model", "optimizer", "optimized_parameters", "lo
 
 all_runs <- rbind(pilot, stage8a, stage8b)
 
-#### Identify consistent maximum-likelihood estimates ####
+# 3. Identify maximum-likelihood estimates ----
 
 groups <- split(all_runs, interaction(all_runs$pair, all_runs$model, drop = TRUE))
 maxima <- list(); convergence <- list(); limiting <- list(); parameters <- list(); comparison <- list()
@@ -71,6 +67,7 @@ for (key in names(groups)) {
 }
 
 maxima <- do.call(rbind, maxima); convergence <- do.call(rbind, convergence); limiting <- do.call(rbind, limiting); parameters <- do.call(rbind, parameters); comparison <- do.call(rbind, comparison)
+# 4. Calculate delta AIC and Akaike weights ----
 comparison <- do.call(rbind, lapply(split(comparison, comparison$pair), function(x) { x$delta_AIC <- x$AIC-min(x$AIC); w <- exp(-.5*x$delta_AIC); x$Akaike_weight <- w/sum(w); x$rank <- rank(x$AIC, ties.method="first"); x }))
 
 write.csv(maxima, file.path(table_dir, "stage8b_final_model_maxima.csv"), row.names=FALSE)
@@ -79,7 +76,7 @@ write.csv(comparison, file.path(table_dir, "stage8b_model_comparison.csv"), row.
 write.csv(limiting, file.path(table_dir, "stage8b_limiting_model_audit.csv"), row.names=FALSE)
 write.csv(parameters, file.path(table_dir, "stage8b_relative_parameter_summary.csv"), row.names=FALSE)
 
-#### K1-K3 SC identifiability ####
+# 5. Examine parameter variation in the K1–K3 secondary-contact model ----
 
 sc <- all_runs[all_runs$pair == "K1_K3" & all_runs$model == "SC", ]
 sc <- sc[sc$logLik >= max(sc$logLik)-0.1, ]

@@ -1,23 +1,16 @@
-# Separate effects of Last Interglacial and Last Glacial Maximum conditions
-# Plot the historical climate comparisons by period and visualize their performance under spatial validation. The period-specific summaries complement the main combined historical analysis.
-# Check the comparison baseline and the relevant conditional permutation result before interpreting an apparent improvement.
-#
-#### Packages ####
+# 1. Load packages ----
 
-# ggplot2 produces the compact manuscript figure from the previously estimated Stage 6B outputs.
 require(ggplot2)
-# dplyr keeps the period-specific summaries transparent and readable.
 require(dplyr)
-# gridExtra places the three scientific comparisons on one publication plate.
 require(gridExtra)
 
-#### Directories ####
+# 2. Define the output directory ----
 
 setwd(Sys.getenv("LAMPROPHOLIS_PROJECT", unset = "."))
 
 dir.create("figures/manuscript", recursive = TRUE, showWarnings = FALSE)
 
-#### Load isolated palaeoclimate tests ####
+# 3. Read the separate LIG and LGM tests ----
 
 observed <- read.csv("results/landscape/paleoclimate/null_period_specific/isolated_period_observed_fold_effects.csv")
 null <- read.csv("results/landscape/paleoclimate/null_period_specific/isolated_period_null_statistics.csv")
@@ -30,7 +23,7 @@ observed$period <- factor(observed$period, levels = c("LGM", "LIG"))
 null$period <- factor(null$period, levels = c("LGM", "LIG"))
 summary$period <- factor(summary$period, levels = c("LGM", "LIG"))
 
-#### Build figure ####
+# 4. Plot observed and permuted historical gains ----
 
 fold.figure <- ggplot(observed, aes(factor(fold), Delta_RMSE, fill = period)) +
   geom_hline(yintercept = 0, colour = "grey65", linewidth = 0.35) +
@@ -71,7 +64,7 @@ summary.figure <- ggplot(summary, aes(period, observed_mean_Delta_RMSE, fill = p
   theme(plot.title = element_text(face = "bold", size = 9, hjust = 0.5),
         axis.text.x = element_text(face = "bold", size = 7), axis.title = element_text(size = 8))
 
-#### Save figure ####
+# 5. Export the figure ----
 
 figure.plate <- arrangeGrob(summary.figure, fold.figure, null.figure, ncol = 3, widths = c(0.95, 1, 1.25))
 

@@ -1,15 +1,17 @@
-"""Illustrated Lampropholis field guide: print and screen layouts. Produce English and Portuguese pocket-guide layouts from the existing scientific colour palette, artwork and geographic summaries. Keep specimen illustrations, labels and sampling geography consistent with the reviewed project materials; figure design does not change the associated genetic analyses."""
+"""Create the English and Portuguese pocket guides."""
 from collections import Counter
 import csv,html,json,math,re,subprocess,sys,tempfile
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
 
+# 1. Set paths and the guide palette
 base=Path(__file__).parent.resolve(); stage=base.parents[1]
 ink='#251462'; violet='#6811DB'; amber='#EBB201'; wash='#F7F3FB'; rule='#C1B8CE'; white='#FFFFFF'
 ks=(violet,'#06ADF1','#B8D6E2',amber)
 sans='DejaVu Sans'; serif='DejaVu Serif'
 font=lambda family: subprocess.check_output(('fc-match','-f','%{file}',family),text=True)
 fontfile=font(sans)
+# 2. Define SVG drawing functions
 def text(x,y,s,n=3.65,c=ink,ff=sans,b=False,it=False):
     return f'<text x="{x}" y="{y}" fill="{c}" font-size="{n}" font-family="{ff}" font-weight="{"bold" if b else "normal"}" font-style="{"italic" if it else "normal"}">{html.escape(s)}</text>'
 def para(x,y,s,w=79,n=3.60,step=5.3):
@@ -25,6 +27,7 @@ def top(x,n,label,h):
 def svg(g,w=303,h=216,x=-3,y=-3):
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}mm" height="{h}mm" viewBox="{x} {y} {w} {h}">{g}</svg>\n'
 assets=base/'shared-assets'; assets.mkdir(exist_ok=True)
+# 3. Prepare artwork and guide content
 if len(sys.argv)>1:
     root=Path(sys.argv[1])
     with (root/'Chapter2_Lampropholis_Heredity/04_reproducibility/plot_inputs/01_sampling/Fig1_panel_sampling_audit.csv').open() as f:
@@ -73,6 +76,7 @@ languages={
 'faces':['Outside face','Inside face','Open → folded']}}
 def ticks(xs):
     return ''.join(line(x,2,x,4)+line(x,206,x,208) for x in xs)
+# 4. Draw the outside and inside panels
 def outside(c):
     f=rect(-3,-3,303,216,white)+rect(-3,-3,100,216,wash)+rect(197,-3,103,216,'#EFE8F7')+ticks((97,197))
     f+=top(8,2,c['qtag'],c['qhead'])+para(8,48,c['q'])[0]+f'<g transform="translate(14 85)">{map_svg}</g>'+para(8,165,c['map'],76,n=3.15,step=4.5)[0]
@@ -106,8 +110,9 @@ def inside(c):
         y=49+40*j;f+=line(208,y-4,286,y-4,amber,.65)+text(208,y+3,head,4.55,ink,serif)+para(208,y+12,p,76,3.55,5.1)[0]
     f+=para(208,176,c['last'],76,3.35,4.9)[0]
     return f
+# 5. Prepare PDF page dimensions
 def boxes(path,pad):
-    # Append print boxes to pdfunite's classic xref without changing the page artwork.
+    # Add PDF trim and bleed boxes.
     b=path.read_bytes()
     old=int(re.findall(rb'startxref\s+(\d+)\s+%%EOF',b)[-1]); trailer=b[old:]
     root=re.search(rb'/Root\s+(\d+\s+\d+\s+R)',trailer)[1].decode()
@@ -125,6 +130,7 @@ def boxes(path,pad):
     b+=b'xref\n'+b''.join(f'{n} 1\n{x:010d} 00000 n \n'.encode() for n,x in ref)
     b+=f'trailer\n<< /Size {max(size,max(n for n,_ in ref)+1)} /Root {root} /Prev {old} >>\nstartxref\n{end}\n%%EOF\n'.encode()
     path.write_bytes(b)
+# 6. Generate preview images
 def review(pdf,stem,labels,tmp):
     imgs=[]
     for i in (1,2):
@@ -140,6 +146,7 @@ def review(pdf,stem,labels,tmp):
     b=imgs[0].crop((int(w*197/297),0,w,h));b.thumbnail((56,115));canvas.paste(b,(240,y+45))
     canvas.save(stem.with_name(stem.name+'_preview.png'),optimize=True)
 marks=''.join(f'<path d="{x}" fill="none" stroke="#251462" stroke-width=".22"/>' for x in ('M-8,0h4','M301,0h4','M-8,210h4','M301,210h4','M0,-8v4','M297,-8v4','M0,214v4','M297,214v4'))
+# 7. Export English and Portuguese editions
 for lang,c in languages.items():
     folder=base/c['locale'];folder.mkdir(exist_ok=True);stem=folder/f'Lampropholis_pocket_guide_{lang}'
     faces=(outside(c),inside(c))
@@ -158,6 +165,7 @@ for lang,c in languages.items():
             if pad: boxes(out,pad)
             else: review(out,stem,c['faces'],td)
 badges=stage/'design/idv/badges';badges.mkdir(exist_ok=True)
+# 8. Draw repository badges
 for n,k,v,w in [('ddrad','Markers','ddRADseq',120),('geo','Region','Eastern Australia',160),('analysis','Code','R + Python',115),('status','Stage','Private review',145)]:
     a=rect(0,0,w,24,wash)+rect(0,0,50,24,ink)+text(5,16,k,10,white)+text(57,16,v,10)+line(51,21,w-3,21,amber)
     (badges/(n+'.svg')).write_text(f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="24" viewBox="0 0 {w} 24">{a}</svg>\n')
