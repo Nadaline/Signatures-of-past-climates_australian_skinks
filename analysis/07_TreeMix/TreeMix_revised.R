@@ -1,4 +1,8 @@
-#### 1. Archived locality-based TreeMix results ####
+# Figure 6: population relationships and admixture in TreeMix
+# Visualize genetic relationships among the 14 geographic groups, with migration edges estimated from allele-frequency covariance. Edges indicate fitted covariance patterns, not observed movements or independently dated migration episodes.
+# Preserve the original edge weights and geographic-group definitions; distinguish the plotted graph from evidence for exactly four historical migration events.
+#
+#### 1. TreeMix relationships among sampling regions ####
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 4L)
 project <- normalizePath(args[1], mustWork = TRUE)
@@ -23,7 +27,7 @@ w <- edges$V4[mig]
 stopifnot(nrow(tip) == 14L, length(root) == 1L, length(mig) == 4L, !anyDuplicated(tip$V2),
   identical(w, as.numeric(sub(" .*", "", newick[-1]))))
 
-#### 2. Frozen membership, site labels and global K = 4 Q ####
+#### 2. Geographic group definitions and range-wide K = 4 ancestry ####
 lab <- c(colossus = "Bunya Mountains", deli1b = "Sarina–Eungella", deli1c = "Rockhampton–Boyne Island",
   deli2 = "Kroombit Tops", deli4a = "Northern NSW ranges", deli4b = "Tweed–Nightcap",
   deli4c = "New England uplands", deli5b = "NSW mid-north ranges", deli7a = "ACT–Southern Tablelands",
@@ -75,8 +79,8 @@ write.csv(crosswalk[order(crosswalk$population,crosswalk$sample_id),],
   file.path(out,"TreeMix_population_label_crosswalk.csv"), row.names=FALSE, na="")
 
 #### 3. Original graph coordinates, unchanged drift scale and directed edges ####
-# The archived TreeMix renderer applies the edge-weight factor twice to its
-# display coordinates. Reproduce that convention; archived edge data stay intact.
+# The previously saved TreeMix renderer applies the edge-weight factor twice to its
+# display coordinates. Reproduce that convention; previously saved edge data stay intact.
 e_plot <- edges
 e_plot$V3 <- edges$V3 * edges$V4 * edges$V4
 vert$x <- vert$y <- vert$ymin <- vert$ymax <- NA_real_
