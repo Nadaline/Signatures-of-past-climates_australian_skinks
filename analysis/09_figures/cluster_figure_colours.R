@@ -1,3 +1,7 @@
+# Consistent genetic-cluster colours across figures
+# Apply the same colour mapping to broad and nested genetic clusters, ensuring that sample assignments and legend meanings remain unchanged.
+# This script adjusts figure presentation only. It does not estimate ancestry coefficients or change the cluster definitions.
+#
 #### Recolour existing plots; never fit models ####
 arg <- commandArgs(TRUE)
 kind <- arg[1]
