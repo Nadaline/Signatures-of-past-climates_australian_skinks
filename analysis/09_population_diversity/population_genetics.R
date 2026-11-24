@@ -1,3 +1,7 @@
+# Genetic diversity among geographic population groups
+# Calculate population diversity and pairwise differentiation from eligible observed SNP genotypes, using the 14 TreeMix geographic groups and complementary ancestry-defined groupings.
+# The estimates describe the assayed RAD markers and should not be interpreted as per-base whole-genome diversity. Distinguish geographic partitions from nuclear ancestry assignments.
+#
 #### 1. Load the observed (not imputed) final panels ####
 args <- commandArgs(TRUE)
 stopifnot(length(args)==2, args[1] %in% c("pilot","final"))
