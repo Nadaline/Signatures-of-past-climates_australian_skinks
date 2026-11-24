@@ -1,4 +1,8 @@
-#### 1. Archived historical GDM results ####
+# Figure 5: additional predictive contribution of historical climates
+# Display the contribution of Last Interglacial and Last Glacial Maximum environments to genetic dissimilarity after accounting for contemporary landscape predictors. This script visualizes model comparisons using saved predictions.
+# Compare the same held-out localities across models; palaeoclimate predictors describe environmental contrasts and do not date population splits.
+#
+#### 1. Historical-climate model results ####
 library(sf)
 args <- commandArgs(TRUE)
 stopifnot(length(args) == 3L)
